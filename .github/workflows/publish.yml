@@ -1,0 +1,110 @@
+name: Publish
+
+on:
+  workflow_dispatch:
+  push:
+    tags:
+      - "v*"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: publish-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  verify-release:
+    runs-on: ubuntu-latest
+    env:
+      REF_TYPE: ${{ github.ref_type }}
+      REF_NAME: ${{ github.ref_name }}
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v5
+
+      - name: Set up Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: "3.12"
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v5
+        with:
+          node-version: "24"
+
+      - name: Validate release bundle
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          test -f js/package.json
+          test -f js/README.md
+          test -f js/dist/browser/index.js
+          test -f js/dist/node/index.js
+          test -f js/dist/types/index.d.ts
+          ls python/dist/*.whl >/dev/null
+          ls python/dist/*.tar.gz >/dev/null
+
+          JS_VERSION=$(node -p "require('./js/package.json').version")
+          PY_VERSION=$(python - <<'PY'
+          from pathlib import Path
+          import re
+
+          wheel = next(Path("python/dist").glob("*.whl"))
+          match = re.match(r"cortex_sdk-([0-9][^-]*)-", wheel.name)
+          if match is None:
+              raise SystemExit(f"Could not parse Python version from {wheel.name}")
+          print(match.group(1))
+          PY
+          )
+
+          if [ "$JS_VERSION" != "$PY_VERSION" ]; then
+            echo "::error::Version mismatch: js/package.json=$JS_VERSION python/dist=$PY_VERSION"
+            exit 1
+          fi
+
+          if [ "$REF_TYPE" = "tag" ]; then
+            TAG_VERSION="${REF_NAME#v}"
+            if [ "$TAG_VERSION" != "$JS_VERSION" ]; then
+              echo "::error::Tag version $TAG_VERSION does not match package version $JS_VERSION"
+              exit 1
+            fi
+          fi
+
+  publish-npm:
+    runs-on: ubuntu-latest
+    needs: verify-release
+    environment: npm
+    permissions:
+      contents: read
+      id-token: write
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v5
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v5
+        with:
+          node-version: "24"
+          registry-url: "https://registry.npmjs.org"
+
+      - name: Publish npm package
+        working-directory: js
+        run: npm publish --provenance --access public
+
+  publish-pypi:
+    runs-on: ubuntu-latest
+    needs: verify-release
+    environment: pypi
+    permissions:
+      contents: read
+      id-token: write
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v5
+
+      - name: Publish Python package distributions to PyPI
+        uses: pypa/gh-action-pypi-publish@release/v1
+        with:
+          packages-dir: python/dist

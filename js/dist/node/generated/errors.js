@@ -1,0 +1,16 @@
+export const GENERATED_ERROR_CATALOG = [
+    { code: 'auth_invalid', retryable: false, fatal: true },
+    { code: 'auth_expired', retryable: true, fatal: false },
+    { code: 'auth_refresh_failed', retryable: false, fatal: true },
+    { code: 'transport_connect_timeout', retryable: true, fatal: false },
+    { code: 'transport_send_timeout', retryable: true, fatal: false },
+    { code: 'transport_protocol_violation', retryable: false, fatal: true },
+    { code: 'session_not_found', retryable: false, fatal: true },
+    { code: 'session_terminal', retryable: false, fatal: true },
+    { code: 'resync_timeout', retryable: true, fatal: false },
+    { code: 'replay_unavailable', retryable: true, fatal: false },
+    { code: 'upload_failed', retryable: true, fatal: false },
+    { code: 'upload_too_large', retryable: false, fatal: false },
+    { code: 'upload_type_rejected', retryable: false, fatal: false },
+];
+//# sourceMappingURL=errors.js.map
