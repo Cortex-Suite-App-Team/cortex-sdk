@@ -38,15 +38,3 @@ Start here:
 - `python/dist/` wheel and sdist ready for PyPI
 - `.github/workflows/publish.yml` trusted-publishing workflow for npm and PyPI
 
-## Release Model
-
-This repository is expected to be updated from the private source repo after a release candidate has already been validated there.
-
-Typical flow:
-
-1. Build and test in the private source repo.
-2. Sync public docs and release artifacts into this repo.
-3. Tag the public repo with `vX.Y.Z`.
-4. Run the publish workflow from this repo.
-
-See [REPO_SETUP.md](REPO_SETUP.md) for the one-time setup checklist.
