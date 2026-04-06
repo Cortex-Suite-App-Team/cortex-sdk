@@ -1,8 +1,12 @@
 {
   "name": "@cortex/sdk",
-  "version": "1.0.2",
+  "version": "1.0.3",
   "description": "Cortex SDK — transport client for JS and Node.js",
   "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Cortex-Suite-App-Team/cortex-sdk.git"
+  },
   "type": "module",
   "engines": {
     "node": ">=18"
