@@ -42,6 +42,10 @@ The base URL of the Cortex auth service. Optional.
 
 You only need to set this if you are working against a non-production environment or a private deployment. Provide the base URL only — do not append a path.
 
+> **Common mistake:** Do not pass a full endpoint such as `https://auth.cortexsuite.app/auth/token`.
+> The SDK appends `/auth/token` itself. Passing the full endpoint URL will cause the SDK
+> to emit a warning and strip the path automatically, but you should configure the base URL.
+
 ```js
 // JavaScript (Browser and Node.js)
 const client = new CortexClient({

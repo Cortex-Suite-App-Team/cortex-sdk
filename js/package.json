@@ -33,10 +33,45 @@
     "dist/",
     "README.md"
   ],
-  "publishConfig": {
-    "access": "public"
+  "scripts": {
+    "generate:shared": "python ../scripts/generate_shared_artifacts.py",
+    "prepare:package": "python ../scripts/prepare_js_package.py",
+    "build:browser": "tsc -p tsconfig.json",
+    "build:node": "tsc -p tsconfig.node.json",
+    "build": "npm run generate:shared && npm run build:browser && npm run build:node && npm run prepare:package",
+    "test": "npm run generate:shared && node --experimental-vm-modules ./node_modules/jest/bin/jest.js",
+    "typecheck": "npm run generate:shared && tsc -p tsconfig.json --noEmit && tsc -p tsconfig.node.json --noEmit",
+    "smoke": "python ../scripts/check_js_package.py",
+    "prepublishOnly": "npm run build && npm test"
   },
   "dependencies": {
     "ws": "^8.18.0"
+  },
+  "devDependencies": {
+    "ajv": "^8.17.1",
+    "@types/jest": "^29.5.12",
+    "@types/node": "^20.14.2",
+    "@types/ws": "^8.5.10",
+    "jest": "^29.7.0",
+    "ts-jest": "^29.1.4",
+    "typescript": "^5.4.5"
+  },
+  "jest": {
+    "preset": "ts-jest/presets/default-esm",
+    "testEnvironment": "node",
+    "extensionsToTreatAsEsm": [".ts"],
+    "moduleNameMapper": {
+      "^(\\.{1,2}/.*)\\.js$": "$1"
+    },
+    "transform": {
+      "^.+\\.tsx?$": [
+        "ts-jest",
+        {
+          "useESM": true
+        }
+      ]
+    },
+    "testMatch": ["**/tests/**/*.test.ts"],
+    "testTimeout": 10000
   }
 }
