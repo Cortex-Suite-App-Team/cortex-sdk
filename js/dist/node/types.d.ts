@@ -1,5 +1,11 @@
 export interface CortexClientOptions {
     apiKey: string;
+    /**
+     * Base URL of the Cortex auth service — origin only, no path component.
+     * The SDK appends `/auth/token` and `/auth/refresh` automatically.
+     * @example "https://auth.cortexsuite.app"
+     * @default "https://auth.cortexsuite.app"
+     */
     authUrl?: string;
     onMessage: (message: CortexMessage) => void;
     connectTimeout?: number;

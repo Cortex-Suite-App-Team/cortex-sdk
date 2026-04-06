@@ -1,6 +1,6 @@
 {
   "name": "@cortex/sdk",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Cortex SDK — transport client for JS and Node.js",
   "license": "MIT",
   "type": "module",
@@ -59,7 +59,9 @@
   "jest": {
     "preset": "ts-jest/presets/default-esm",
     "testEnvironment": "node",
-    "extensionsToTreatAsEsm": [".ts"],
+    "extensionsToTreatAsEsm": [
+      ".ts"
+    ],
     "moduleNameMapper": {
       "^(\\.{1,2}/.*)\\.js$": "$1"
     },
@@ -71,7 +73,9 @@
         }
       ]
     },
-    "testMatch": ["**/tests/**/*.test.ts"],
+    "testMatch": [
+      "**/tests/**/*.test.ts"
+    ],
     "testTimeout": 10000
   }
 }

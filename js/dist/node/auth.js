@@ -54,7 +54,20 @@ export function isTokenExpiringSoon(accessToken) {
     return Date.now() > expMs - TOKEN_REFRESH_BUFFER_MS;
 }
 export function normalizeAuthBaseUrl(authUrl) {
-    return authUrl.replace(/\/+$/, '') || DEFAULT_AUTH_URL;
+    let normalized = authUrl.replace(/\/+$/, '');
+    // Guard: consumer may have passed a full endpoint instead of the base URL.
+    // Strip known auth paths and warn so developers catch the misconfiguration early.
+    for (const knownPath of [AUTH_TOKEN_PATH, AUTH_REFRESH_PATH]) {
+        if (normalized.endsWith(knownPath)) {
+            const base = normalized.slice(0, -knownPath.length);
+            console.warn(`[CortexSDK] authUrl must be a base URL (origin only), not a full endpoint. ` +
+                `Received "${authUrl}" — "${knownPath}" has been stripped automatically. ` +
+                `Pass the base URL only, e.g., "${base}".`);
+            normalized = base;
+            break;
+        }
+    }
+    return normalized || DEFAULT_AUTH_URL;
 }
 function buildAuthEndpoint(authBaseUrl, path) {
     return `${normalizeAuthBaseUrl(authBaseUrl)}${path}`;
