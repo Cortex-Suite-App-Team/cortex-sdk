@@ -52,7 +52,7 @@ jobs:
           import re
 
           wheel = next(Path("python/dist").glob("*.whl"))
-          match = re.match(r"cortex_sdk-([0-9][^-]*)-", wheel.name)
+          match = re.match(r".+?-([0-9][^-]*)-", wheel.name)
           if match is None:
               raise SystemExit(f"Could not parse Python version from {wheel.name}")
           print(match.group(1))

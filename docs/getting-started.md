@@ -23,7 +23,7 @@ npm install @cortex/sdk
 
 ```bash
 # Python
-pip install cortex-sdk
+pip install cortex-suite-sdk
 ```
 
 ---

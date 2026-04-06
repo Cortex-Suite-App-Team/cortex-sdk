@@ -36,7 +36,7 @@ Your application provides an API key and a callback function. The SDK does every
 |---|---|---|
 | JavaScript (Browser) | `npm install @cortex/sdk` | `import { CortexClient } from "@cortex/sdk"` |
 | JavaScript (Node.js) | `npm install @cortex/sdk` | `import { CortexClient } from "@cortex/sdk"` |
-| Python | `pip install cortex-sdk` | `from cortex_sdk import CortexClient` |
+| Python | `pip install cortex-suite-sdk` | `from cortex_sdk import CortexClient` |
 
 All three bindings implement the same API. The only differences are naming conventions (camelCase vs snake_case) and time units (milliseconds vs seconds). See [Language Notes](language-notes.md) for the full mapping.
 

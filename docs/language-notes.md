@@ -148,7 +148,7 @@ import { CortexClient } from "@cortex/sdk/node";
 ### Install
 
 ```bash
-pip install cortex-sdk
+pip install cortex-suite-sdk
 ```
 
 ### Import

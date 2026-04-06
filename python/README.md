@@ -2,7 +2,7 @@
 
 ## Install
 
-`pip install cortex-sdk`
+`pip install cortex-suite-sdk`
 
 ## Quick start
 
