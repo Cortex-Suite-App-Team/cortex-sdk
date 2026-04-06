@@ -91,7 +91,7 @@ jobs:
 
       - name: Publish npm package
         working-directory: js
-        run: npm publish --provenance --access public
+        run: npm publish --provenance --access public --ignore-scripts
 
   publish-pypi:
     runs-on: ubuntu-latest
