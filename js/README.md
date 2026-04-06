@@ -2,14 +2,14 @@
 
 ## Install
 
-`npm install @cortex/sdk`
+`npm install @cortex-suite/sdk`
 
 ## Quick start
 
 ### Browser
 
 ```js
-import { CortexClient } from "@cortex/sdk";
+import { CortexClient } from "@cortex-suite/sdk";
 
 const client = new CortexClient({
   apiKey: "your-api-key",
@@ -24,7 +24,7 @@ await client.sendMessage({ content: "Hello" });
 ### Node.js
 
 ```js
-import { CortexClient } from "@cortex/sdk";
+import { CortexClient } from "@cortex-suite/sdk";
 
 async function main() {
   const client = new CortexClient({
@@ -48,7 +48,7 @@ See the [full API reference](../docs/api-reference.md).
 ## Error handling
 
 ```js
-import { CortexClient } from "@cortex/sdk";
+import { CortexClient } from "@cortex-suite/sdk";
 
 const client = new CortexClient({
   apiKey: "your-api-key",

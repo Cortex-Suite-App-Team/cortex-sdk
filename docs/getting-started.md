@@ -18,7 +18,7 @@ This page walks you from zero to a working Cortex SDK integration. By the end yo
 
 ```bash
 # JavaScript (Browser and Node.js)
-npm install @cortex/sdk
+npm install @cortex-suite/sdk
 ```
 
 ```bash
@@ -34,7 +34,7 @@ The minimal integration: construct a client, connect, send a message, then disco
 
 ```js
 // JavaScript (Browser and Node.js)
-import { CortexClient } from "@cortex/sdk";
+import { CortexClient } from "@cortex-suite/sdk";
 
 const client = new CortexClient({
   apiKey: "your-api-key",
@@ -100,7 +100,7 @@ The runtime may send multiple messages in response to a single user message. A s
 
 ```js
 // JavaScript (Browser and Node.js)
-import { CortexClient } from "@cortex/sdk";
+import { CortexClient } from "@cortex-suite/sdk";
 
 const client = new CortexClient({
   apiKey: "your-api-key",

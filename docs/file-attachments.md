@@ -71,7 +71,7 @@ A full upload-then-send flow:
 
 ```js
 // JavaScript (Browser and Node.js)
-import { CortexClient } from "@cortex/sdk";
+import { CortexClient } from "@cortex-suite/sdk";
 
 const client = new CortexClient({
   apiKey: "your-api-key",
@@ -164,7 +164,7 @@ await client.send_message(
 
 ```js
 // JavaScript (Browser and Node.js)
-import { CortexClient } from "@cortex/sdk";
+import { CortexClient } from "@cortex-suite/sdk";
 
 try {
   const attachmentId = await client.uploadAttachment("./data.csv");

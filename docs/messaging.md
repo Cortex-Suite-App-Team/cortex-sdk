@@ -207,7 +207,7 @@ A complete, production-ready callback implementation that routes all message typ
 
 ```js
 // JavaScript (Browser and Node.js)
-import { CortexClient } from "@cortex/sdk";
+import { CortexClient } from "@cortex-suite/sdk";
 
 let streamBuffer = "";
 
@@ -292,7 +292,7 @@ The `onMessage` callback is synchronous. If you need to do async work when a mes
 
 ```js
 // JavaScript (Browser and Node.js)
-import { CortexClient } from "@cortex/sdk";
+import { CortexClient } from "@cortex-suite/sdk";
 
 const queue = [];
 

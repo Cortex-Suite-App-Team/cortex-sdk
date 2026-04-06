@@ -112,7 +112,7 @@ from cortex_sdk import CortexClient, CortexError
 
 ```js
 // JavaScript (Browser and Node.js)
-import { CortexClient } from "@cortex/sdk";
+import { CortexClient } from "@cortex-suite/sdk";
 
 const client = new CortexClient({
   apiKey: "your-api-key",
@@ -165,7 +165,7 @@ asyncio.run(main())
 
 ```js
 // JavaScript (Browser and Node.js)
-import { CortexClient } from "@cortex/sdk";
+import { CortexClient } from "@cortex-suite/sdk";
 
 let client = new CortexClient({
   apiKey: "your-api-key",

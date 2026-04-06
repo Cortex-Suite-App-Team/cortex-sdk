@@ -73,7 +73,7 @@ Optionally, you can watch `channelState` to show a "reconnecting" indicator in y
 
 ```js
 // JavaScript (Browser and Node.js)
-import { CortexClient } from "@cortex/sdk";
+import { CortexClient } from "@cortex-suite/sdk";
 
 const client = new CortexClient({
   apiKey: "your-api-key",
@@ -151,7 +151,7 @@ When `channelState` becomes `AUTH_FAILED`, the current session is unrecoverable.
 
 ```js
 // JavaScript (Browser and Node.js)
-import { CortexClient } from "@cortex/sdk";
+import { CortexClient } from "@cortex-suite/sdk";
 
 let client;
 

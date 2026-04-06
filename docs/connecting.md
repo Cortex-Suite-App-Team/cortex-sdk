@@ -8,7 +8,7 @@ Call `connect()` to start a session. It performs the full bootstrap sequence and
 
 ```js
 // JavaScript (Browser and Node.js)
-import { CortexClient } from "@cortex/sdk";
+import { CortexClient } from "@cortex-suite/sdk";
 
 const client = new CortexClient({
   apiKey: "your-api-key",
@@ -53,7 +53,7 @@ Non-fatal errors (network failures, connection timeouts) are retried automatical
 
 ```js
 // JavaScript (Browser and Node.js)
-import { CortexClient } from "@cortex/sdk";
+import { CortexClient } from "@cortex-suite/sdk";
 
 const client = new CortexClient({ apiKey: "your-api-key", onMessage: handleMessage });
 

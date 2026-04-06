@@ -10,7 +10,7 @@ The only public class in the SDK. One instance manages one runtime session.
 
 ```js
 // JavaScript (Browser and Node.js)
-import { CortexClient } from "@cortex/sdk";
+import { CortexClient } from "@cortex-suite/sdk";
 const client = new CortexClient(options);
 ```
 

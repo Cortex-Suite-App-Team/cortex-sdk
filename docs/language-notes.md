@@ -80,15 +80,15 @@ client = CortexClient(
 ### Install
 
 ```bash
-npm install @cortex/sdk
+npm install @cortex-suite/sdk
 ```
 
 ### Import
 
 ```js
-import { CortexClient } from "@cortex/sdk";
+import { CortexClient } from "@cortex-suite/sdk";
 // or pin the browser entrypoint explicitly:
-import { CortexClient } from "@cortex/sdk/browser";
+import { CortexClient } from "@cortex-suite/sdk/browser";
 ```
 
 ### Platform notes
@@ -114,15 +114,15 @@ import { CortexClient } from "@cortex/sdk/browser";
 ### Install
 
 ```bash
-npm install @cortex/sdk
+npm install @cortex-suite/sdk
 ```
 
 ### Import
 
 ```js
-import { CortexClient } from "@cortex/sdk";
+import { CortexClient } from "@cortex-suite/sdk";
 // or pin the Node.js entrypoint explicitly:
-import { CortexClient } from "@cortex/sdk/node";
+import { CortexClient } from "@cortex-suite/sdk/node";
 ```
 
 ### Platform notes

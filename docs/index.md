@@ -1,6 +1,6 @@
 # Cortex SDK — Developer Manual
 
-**Version:** 1.0.3
+**Version:** 1.0.4
 
 The Cortex SDK is a transport client that connects your application to the Cortex runtime over a persistent WebSocket session. It handles the entire connection lifecycle — authentication, session management, reconnection, and heartbeating — so your code only deals with sending messages and reacting to responses.
 
@@ -34,8 +34,8 @@ Your application provides an API key and a callback function. The SDK does every
 
 | Binding | Install | Import |
 |---|---|---|
-| JavaScript (Browser) | `npm install @cortex/sdk` | `import { CortexClient } from "@cortex/sdk"` |
-| JavaScript (Node.js) | `npm install @cortex/sdk` | `import { CortexClient } from "@cortex/sdk"` |
+| JavaScript (Browser) | `npm install @cortex-suite/sdk` | `import { CortexClient } from "@cortex-suite/sdk"` |
+| JavaScript (Node.js) | `npm install @cortex-suite/sdk` | `import { CortexClient } from "@cortex-suite/sdk"` |
 | Python | `pip install cortex-suite-sdk` | `from cortex_sdk import CortexClient` |
 
 All three bindings implement the same API. The only differences are naming conventions (camelCase vs snake_case) and time units (milliseconds vs seconds). See [Language Notes](language-notes.md) for the full mapping.

@@ -14,7 +14,7 @@ This repo intentionally does not contain the private source tree, internal tests
 ## Install
 
 ```bash
-npm install @cortex/sdk
+npm install @cortex-suite/sdk
 ```
 
 ```bash
