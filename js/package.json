@@ -1,6 +1,6 @@
 {
   "name": "@cortex-suite/sdk",
-  "version": "1.0.4",
+  "version": "1.0.5",
   "description": "Cortex SDK — transport client for JS and Node.js",
   "license": "MIT",
   "repository": {

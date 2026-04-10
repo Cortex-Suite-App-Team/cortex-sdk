@@ -88,7 +88,7 @@ from cortex_sdk import CortexClient, CortexError
 
 | Code | Retryable | Fatal | Meaning |
 |---|---|---|---|
-| `session_not_found` | no | **yes** | Session ID not recognized by the runtime |
+| `unknown_session` | no | **yes** | Session ID not recognized by the runtime |
 | `session_terminal` | no | **yes** | Message sent to a session that has already ended |
 
 ### Resync errors

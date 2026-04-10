@@ -5,7 +5,7 @@ export const GENERATED_ERROR_CATALOG = [
     { code: 'transport_connect_timeout', retryable: true, fatal: false },
     { code: 'transport_send_timeout', retryable: true, fatal: false },
     { code: 'transport_protocol_violation', retryable: false, fatal: true },
-    { code: 'session_not_found', retryable: false, fatal: true },
+    { code: 'unknown_session', retryable: false, fatal: true },
     { code: 'session_terminal', retryable: false, fatal: true },
     { code: 'resync_timeout', retryable: true, fatal: false },
     { code: 'replay_unavailable', retryable: true, fatal: false },
