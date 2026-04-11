@@ -39,10 +39,11 @@ export interface RuntimeBootstrap {
     artifact_id?: string;
     artifact_kind?: string;
     run_mode?: string;
+    trigger_payload?: Record<string, unknown>;
 }
 export interface SendMessageOptions {
-    content: string;
-    attachments?: string[];
+    content: unknown;
+    attachments?: unknown[];
 }
 /** Platform-specific WebSocket constructor passed in by each entry point. */
 export type WebSocketCtor = new (url: string, protocols: string[]) => WebSocketLike;

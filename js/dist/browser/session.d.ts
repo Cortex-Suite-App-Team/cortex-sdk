@@ -8,11 +8,13 @@ export interface SessionController {
     sendInit(bootstrap: RuntimeBootstrap): Promise<void>;
     sendResync(): Promise<void>;
     sendStop(): Promise<void>;
-    sendChatMessage(content: string, attachments: string[] | undefined): Promise<void>;
+    sendChatMessage(content: unknown, attachments: unknown[] | undefined): Promise<void>;
+    sendSystemTrigger(content: unknown, attachments: unknown[] | undefined): Promise<void>;
     handleIncoming(data: string): void;
     get sessionId(): string | null;
     get sessionState(): SessionState;
     get lastSeq(): number;
+    setTenantId(tenantId: string | null | undefined): void;
     setTransport(transport: Transport, sendTimeoutMs: number): void;
 }
 export declare function createSession(callbacks: SessionCallbacks): SessionController;

@@ -22,6 +22,7 @@ export function createSession(callbacks) {
     let _lastSeq = 0;
     let _transport = null;
     let _sendTimeoutMs = 10000;
+    let _tenantId = null;
     function setSessionState(next) {
         if (TERMINAL_STATES.has(_sessionState) && _sessionState !== next) {
             return;
@@ -66,6 +67,20 @@ export function createSession(callbacks) {
             env['session_id'] = _sessionId;
         return env;
     }
+    function makeClientMsgId(prefix) {
+        const cryptoRef = globalThis.crypto;
+        if (cryptoRef && typeof cryptoRef.randomUUID === 'function') {
+            return `${prefix}_${cryptoRef.randomUUID()}`;
+        }
+        return `${prefix}_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 12)}`;
+    }
+    function buildMessagePayload(content, attachments) {
+        const payload = { content, role: 'user' };
+        if (attachments && attachments.length > 0) {
+            payload['meta'] = { attachments };
+        }
+        return payload;
+    }
     function handleSystemError(payload) {
         const code = typeof payload['code'] === 'string' ? payload['code'] : 'session_terminal';
         const message = typeof payload['message'] === 'string' ? payload['message'] : 'Runtime error';
@@ -79,6 +94,10 @@ export function createSession(callbacks) {
         // (the envelope was already dispatched above via onMessage)
     }
     return {
+        setTenantId(tenantId) {
+            const normalized = typeof tenantId === 'string' ? tenantId.trim() : '';
+            _tenantId = normalized || null;
+        },
         setTransport(transport, sendTimeoutMs) {
             _transport = transport;
             _sendTimeoutMs = sendTimeoutMs;
@@ -93,8 +112,11 @@ export function createSession(callbacks) {
                 type: 'system::init',
                 schema: SCHEMA_VERSION,
                 payload: bootstrap,
+                meta: { client_msg_id: makeClientMsgId('cli_init') },
                 ts: new Date().toISOString(),
             };
+            if (_tenantId)
+                envelope['tenant_id'] = _tenantId;
             return send(envelope);
         },
         sendResync() {
@@ -104,10 +126,14 @@ export function createSession(callbacks) {
             return send(buildEnvelope('sandbox::stop', {}));
         },
         sendChatMessage(content, attachments) {
-            const payload = { content, role: 'user' };
-            if (attachments && attachments.length > 0)
-                payload['attachments'] = attachments;
-            return send(buildEnvelope('chat::message', payload));
+            return send(buildEnvelope('chat::message', buildMessagePayload(content, attachments)));
+        },
+        sendSystemTrigger(content, attachments) {
+            const payload = { content };
+            if (attachments && attachments.length > 0) {
+                payload['meta'] = { attachments };
+            }
+            return send(buildEnvelope('system::trigger', payload));
         },
         handleIncoming(data) {
             let msg;
