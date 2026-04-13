@@ -10,6 +10,7 @@ export interface SessionController {
     sendStop(): Promise<void>;
     sendChatMessage(content: unknown, attachments: unknown[] | undefined): Promise<void>;
     sendSystemTrigger(content: unknown, attachments: unknown[] | undefined): Promise<void>;
+    sendTrigger(payload: Record<string, unknown>): Promise<void>;
     handleIncoming(data: string): void;
     get sessionId(): string | null;
     get sessionState(): SessionState;

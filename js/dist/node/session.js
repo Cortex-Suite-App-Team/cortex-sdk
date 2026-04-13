@@ -135,6 +135,15 @@ export function createSession(callbacks) {
             }
             return send(buildEnvelope('system::trigger', payload));
         },
+        sendTrigger(payload) {
+            return send({
+                type: 'system::trigger',
+                schema: SCHEMA_VERSION,
+                payload: payload || {},
+                meta: { client_msg_id: makeClientMsgId('cli_trigger') },
+                ts: new Date().toISOString(),
+            });
+        },
         handleIncoming(data) {
             let msg;
             try {
