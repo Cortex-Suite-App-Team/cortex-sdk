@@ -23,12 +23,23 @@ export class CortexNodeClient extends CortexClient {
         super(options, makePlatform());
     }
     /** Node-specific override: accepts browser-safe inputs plus file paths and Readable streams */
-    async uploadAttachment(file) {
+    async uploadFile(file, options = {}) {
         if (!this['_accessToken']) {
             const { makeError } = await import('./errors.js');
             throw makeError('auth_invalid', 'Not connected');
         }
-        return uploadFileNode(file, this['_accessToken'], UPLOAD_URL, nodeFetch);
+        const sessionId = options.sessionId ?? this.sessionId;
+        if (!sessionId) {
+            const { makeError } = await import('./errors.js');
+            throw makeError('session_not_ready', 'Session is not ready');
+        }
+        const runtimeBaseUrl = this['_requireRuntimeHttpBaseUrl']();
+        const uploadUrl = new URL(UPLOAD_URL, `${runtimeBaseUrl}/`);
+        uploadUrl.searchParams.set('session_id', sessionId);
+        return uploadFileNode(file, this['_accessToken'], uploadUrl.toString(), nodeFetch);
+    }
+    async uploadAttachment(file) {
+        return this.uploadFile(file);
     }
 }
 // Re-export as CortexClient for uniform import

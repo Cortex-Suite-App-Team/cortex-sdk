@@ -30,7 +30,47 @@ export interface AuthTokenResponse {
     ws_url: string;
     access_token: string;
     refresh_token: string;
+    cp_api_url?: string | null;
     runtime_bootstrap: RuntimeBootstrap;
+}
+export type FileScope = 'session' | 'project';
+export interface FileRef {
+    file_id?: string;
+    filename?: string;
+    content_type?: string;
+    size?: number;
+    scope_type?: string;
+    scope_id?: string;
+    status?: string;
+    created_at?: string;
+    updated_at?: string;
+    expires_at?: string | null;
+}
+export interface FileListResult {
+    files: FileRef[];
+    total: number;
+}
+export interface FileReadyEvent extends FileRef {
+    file_id: string;
+}
+export interface UploadFileOptions {
+    sessionId?: string;
+}
+export interface DownloadFileOptions {
+    scope?: FileScope;
+    sessionId?: string;
+    projectId?: string | number;
+}
+export interface ListFilesOptions {
+    scope?: FileScope;
+    sessionId?: string;
+    projectId?: string | number;
+    limit?: number;
+    offset?: number;
+    includeTrashed?: boolean;
+}
+export interface PromoteFileOptions {
+    projectId: string | number;
 }
 export interface RuntimeBootstrap {
     execution_mode: string;
@@ -72,6 +112,8 @@ export interface Response {
     ok: boolean;
     status: number;
     json(): Promise<unknown>;
+    arrayBuffer?(): Promise<ArrayBuffer>;
+    blob?(): Promise<Blob>;
 }
 /** FormData-like interface (browser FormData or node-compatible). */
 export interface FormDataLike {

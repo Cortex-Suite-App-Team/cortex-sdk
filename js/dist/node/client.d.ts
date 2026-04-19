@@ -1,5 +1,5 @@
 import { type UploadInput } from './upload.js';
-import type { CortexClientOptions, SessionState, ChannelState, WebSocketCtor, FetchFn, FormDataCtor } from './types.js';
+import type { CortexClientOptions, SessionState, ChannelState, WebSocketCtor, FetchFn, FormDataCtor, DownloadFileOptions, FileListResult, FileRef, ListFilesOptions, PromoteFileOptions, UploadFileOptions } from './types.js';
 export interface CortexClientPlatform {
     WS: WebSocketCtor;
     fetchFn: FetchFn;
@@ -13,6 +13,8 @@ export declare class CortexClient {
     private _accessToken;
     private _refreshToken;
     private _wsUrl;
+    private _runtimeHttpBaseUrl;
+    private _cpApiUrl;
     private _channelId;
     private _reconnectAttempt;
     private _disconnectRequested;
@@ -32,7 +34,11 @@ export declare class CortexClient {
         content: string;
         attachments?: string[];
     }): Promise<void>;
+    uploadFile(file: UploadInput, options?: UploadFileOptions): Promise<string>;
     uploadAttachment(file: UploadInput): Promise<string>;
+    downloadFile(fileId: string, options?: DownloadFileOptions): Promise<Blob>;
+    listFiles(options?: ListFilesOptions): Promise<FileListResult>;
+    promoteFile(fileId: string, options: PromoteFileOptions): Promise<FileRef>;
     stop(): Promise<void>;
     private _openChannel;
     private _handleStale;
@@ -45,5 +51,11 @@ export declare class CortexClient {
     private _shouldStopReconnect;
     private _createCancelableDelay;
     private _cancelPendingDelays;
+    private _requireSessionId;
+    private _requireRuntimeHttpBaseUrl;
+    private _requireCpApiUrl;
+    private _resolveRuntimeUrl;
+    private _requestJson;
+    private _request;
 }
 //# sourceMappingURL=client.d.ts.map

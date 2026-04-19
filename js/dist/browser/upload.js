@@ -35,6 +35,10 @@ export async function uploadFile(file, accessToken, uploadUrl, fetchFn, FormData
         throw makeError('upload_failed', `Upload failed with status ${res.status}`);
     }
     const body = await res.json();
-    return body['attachment_id'];
+    const fileId = body['file_id'] ?? body['attachment_id'];
+    if (typeof fileId !== 'string') {
+        throw makeError('upload_failed', 'Upload response did not include file_id');
+    }
+    return fileId;
 }
 //# sourceMappingURL=upload.js.map

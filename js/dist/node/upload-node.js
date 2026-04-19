@@ -44,7 +44,11 @@ export async function uploadFileNode(file, accessToken, uploadUrl, fetchFn) {
         throw makeError('upload_failed', `Upload failed with status ${res.status}`);
     }
     const body = await res.json();
-    return body['attachment_id'];
+    const fileId = body['file_id'] ?? body['attachment_id'];
+    if (typeof fileId !== 'string') {
+        throw makeError('upload_failed', 'Upload response did not include file_id');
+    }
+    return fileId;
 }
 function streamToBuffer(stream) {
     return new Promise((resolve, reject) => {

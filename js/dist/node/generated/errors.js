@@ -12,5 +12,11 @@ export const GENERATED_ERROR_CATALOG = [
     { code: 'upload_failed', retryable: true, fatal: false },
     { code: 'upload_too_large', retryable: false, fatal: false },
     { code: 'upload_type_rejected', retryable: false, fatal: false },
+    { code: 'session_not_ready', retryable: true, fatal: false },
+    { code: 'file_api_unavailable', retryable: false, fatal: false },
+    { code: 'file_not_found', retryable: false, fatal: false },
+    { code: 'file_access_denied', retryable: false, fatal: false },
+    { code: 'file_expired', retryable: false, fatal: false },
+    { code: 'file_operation_failed', retryable: true, fatal: false },
 ];
 //# sourceMappingURL=errors.js.map

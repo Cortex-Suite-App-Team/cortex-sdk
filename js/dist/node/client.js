@@ -11,6 +11,8 @@ export class CortexClient {
         this._accessToken = null;
         this._refreshToken = null;
         this._wsUrl = null;
+        this._runtimeHttpBaseUrl = null;
+        this._cpApiUrl = null;
         this._channelId = `ch_${Math.random().toString(36).slice(2, 10)}`;
         this._reconnectAttempt = 0;
         this._disconnectRequested = false;
@@ -69,6 +71,9 @@ export class CortexClient {
         this._accessToken = authResponse.access_token;
         this._refreshToken = authResponse.refresh_token;
         this._wsUrl = authResponse.ws_url;
+        this._runtimeHttpBaseUrl = deriveRuntimeHttpBaseUrl(authResponse.ws_url);
+        this._runtimeHttpBaseUrl = deriveRuntimeHttpBaseUrlFromHttpUrl(this._platform.uploadUrl) ?? this._runtimeHttpBaseUrl;
+        this._cpApiUrl = normalizeOptionalBaseUrl(authResponse.cp_api_url);
         // Open channel + init session
         await this._openChannel();
         this._session.setTransport(this._transport, this._options.sendTimeout);
@@ -92,10 +97,77 @@ export class CortexClient {
     async sendMessage(options) {
         await this._session.sendChatMessage(options.content, options.attachments);
     }
-    async uploadAttachment(file) {
+    async uploadFile(file, options = {}) {
         if (!this._accessToken)
             throw makeError('auth_invalid', 'Not connected');
-        return uploadFile(file, this._accessToken, this._platform.uploadUrl, this._platform.fetchFn, this._platform.FormDataClass);
+        const sessionId = this._requireSessionId(options.sessionId);
+        return uploadFile(file, this._accessToken, withQueryParams(this._resolveRuntimeUrl(this._platform.uploadUrl), { session_id: sessionId }), this._platform.fetchFn, this._platform.FormDataClass);
+    }
+    async uploadAttachment(file) {
+        return this.uploadFile(file);
+    }
+    async downloadFile(fileId, options = {}) {
+        if (!this._accessToken)
+            throw makeError('auth_invalid', 'Not connected');
+        const scope = options.scope ?? 'session';
+        let url;
+        if (scope === 'session') {
+            const sessionId = this._requireSessionId(options.sessionId);
+            url = `${this._requireRuntimeHttpBaseUrl()}/download/${encodeURIComponent(fileId)}`;
+            url = withQueryParams(url, { session_id: sessionId });
+        }
+        else if (scope === 'project') {
+            if (options.projectId === undefined) {
+                throw makeError('file_operation_failed', 'projectId is required for project file download');
+            }
+            url = `${this._requireCpApiUrl()}/api/workspace/projects/${encodeURIComponent(String(options.projectId))}`
+                + `/files/${encodeURIComponent(fileId)}/download/`;
+        }
+        else {
+            throw makeError('file_operation_failed', `Unsupported file scope: ${scope}`);
+        }
+        const res = await this._request(url, 'GET');
+        if (typeof res.blob === 'function') {
+            return res.blob();
+        }
+        if (typeof res.arrayBuffer === 'function') {
+            return new Blob([await res.arrayBuffer()]);
+        }
+        throw makeError('file_operation_failed', 'File API response does not expose bytes');
+    }
+    async listFiles(options = {}) {
+        if (!this._accessToken)
+            throw makeError('auth_invalid', 'Not connected');
+        const scope = options.scope ?? 'session';
+        const query = {
+            limit: options.limit ?? 50,
+            offset: options.offset ?? 0,
+            include_trashed: String(options.includeTrashed ?? false),
+        };
+        let url;
+        if (scope === 'session') {
+            const sessionId = this._requireSessionId(options.sessionId);
+            url = `${this._requireRuntimeHttpBaseUrl()}/sessions/${encodeURIComponent(sessionId)}/files/`;
+        }
+        else if (scope === 'project') {
+            if (options.projectId === undefined) {
+                throw makeError('file_operation_failed', 'projectId is required for project file list');
+            }
+            url = `${this._requireCpApiUrl()}/api/workspace/projects/${encodeURIComponent(String(options.projectId))}/files/`;
+        }
+        else {
+            throw makeError('file_operation_failed', `Unsupported file scope: ${scope}`);
+        }
+        const body = await this._requestJson(withQueryParams(url, query));
+        return body;
+    }
+    async promoteFile(fileId, options) {
+        if (!this._accessToken)
+            throw makeError('auth_invalid', 'Not connected');
+        const url = `${this._requireCpApiUrl()}/api/workspace/projects/${encodeURIComponent(String(options.projectId))}`
+            + `/files/${encodeURIComponent(fileId)}/promote/`;
+        const body = await this._requestJson(url, 'POST');
+        return body;
     }
     async stop() {
         await this._session.sendStop();
@@ -259,6 +331,92 @@ export class CortexClient {
             cancel();
         }
     }
+    _requireSessionId(sessionId) {
+        const effectiveSessionId = sessionId ?? this.sessionId;
+        if (!effectiveSessionId) {
+            throw makeError('session_not_ready', 'Session is not ready');
+        }
+        return effectiveSessionId;
+    }
+    _requireRuntimeHttpBaseUrl() {
+        if (!this._runtimeHttpBaseUrl) {
+            throw makeError('file_api_unavailable', 'Runtime file API is unavailable');
+        }
+        return this._runtimeHttpBaseUrl;
+    }
+    _requireCpApiUrl() {
+        if (!this._cpApiUrl) {
+            throw makeError('file_api_unavailable', 'Control Plane file API is unavailable');
+        }
+        return this._cpApiUrl;
+    }
+    _resolveRuntimeUrl(pathOrUrl) {
+        if (/^https?:\/\//i.test(pathOrUrl))
+            return pathOrUrl;
+        return `${this._requireRuntimeHttpBaseUrl()}${pathOrUrl.startsWith('/') ? '' : '/'}${pathOrUrl}`;
+    }
+    async _requestJson(url, method = 'GET') {
+        const res = await this._request(url, method);
+        const body = await res.json();
+        if (!body || typeof body !== 'object' || Array.isArray(body)) {
+            throw makeError('file_operation_failed', 'File API returned a non-object response');
+        }
+        return body;
+    }
+    async _request(url, method) {
+        if (!this._accessToken)
+            throw makeError('auth_invalid', 'Not connected');
+        const res = await this._platform.fetchFn(url, {
+            method,
+            headers: { Authorization: `Bearer ${this._accessToken}` },
+        });
+        if (!res.ok) {
+            throw mapFileResponseError(res.status);
+        }
+        return res;
+    }
 }
 const CANCELLED = Symbol('cancelled');
+function deriveRuntimeHttpBaseUrl(wsUrl) {
+    if (!wsUrl)
+        return null;
+    const parsed = new URL(wsUrl);
+    parsed.protocol = parsed.protocol === 'wss:' ? 'https:' : parsed.protocol === 'ws:' ? 'http:' : parsed.protocol;
+    parsed.pathname = '';
+    parsed.search = '';
+    parsed.hash = '';
+    return parsed.toString().replace(/\/$/, '');
+}
+function deriveRuntimeHttpBaseUrlFromHttpUrl(httpUrl) {
+    if (!/^https?:\/\//i.test(httpUrl))
+        return null;
+    const parsed = new URL(httpUrl);
+    parsed.pathname = '';
+    parsed.search = '';
+    parsed.hash = '';
+    return parsed.toString().replace(/\/$/, '');
+}
+function normalizeOptionalBaseUrl(url) {
+    if (typeof url !== 'string' || url.trim() === '')
+        return null;
+    return url.replace(/\/$/, '');
+}
+function withQueryParams(url, params) {
+    const parsed = new URL(url);
+    for (const [key, value] of Object.entries(params)) {
+        parsed.searchParams.set(key, String(value));
+    }
+    return parsed.toString();
+}
+function mapFileResponseError(status) {
+    if (status === 401)
+        return makeError('auth_invalid', 'File API authentication failed');
+    if (status === 403)
+        return makeError('file_access_denied', 'File access denied');
+    if (status === 404)
+        return makeError('file_not_found', 'File not found');
+    if (status === 410)
+        return makeError('file_expired', 'File expired');
+    return makeError('file_operation_failed', `File operation failed with status ${status}`);
+}
 //# sourceMappingURL=client.js.map
