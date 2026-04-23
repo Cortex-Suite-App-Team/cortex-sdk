@@ -1,6 +1,6 @@
 # Cortex SDK — Developer Manual
 
-**Version:** 1.0.10
+**Version:** 1.0.11
 
 The Cortex SDK is a transport client that connects your application to the Cortex runtime over a persistent WebSocket session. It handles the entire connection lifecycle — authentication, session management, reconnection, and heartbeating — so your code only deals with sending messages and reacting to responses.
 
