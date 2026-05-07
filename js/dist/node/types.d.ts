@@ -85,6 +85,15 @@ export interface SendMessageOptions {
     content: unknown;
     attachments?: unknown[];
 }
+export type EscalationReplyAction = 'continue' | 'operator_input' | 'reply_user';
+export type EscalationReplyContent = string | Record<string, unknown>;
+export interface ReplyEscalationOptions {
+    escalationId: string;
+    waitToken: string;
+    action: EscalationReplyAction;
+    content?: EscalationReplyContent;
+    meta?: Record<string, unknown>;
+}
 /** Platform-specific WebSocket constructor passed in by each entry point. */
 export type WebSocketCtor = new (url: string, protocols: string[]) => WebSocketLike;
 export interface WebSocketLike {

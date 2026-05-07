@@ -1,5 +1,5 @@
 import { type UploadInput } from './upload.js';
-import type { CortexClientOptions, SessionState, ChannelState, WebSocketCtor, FetchFn, FormDataCtor, DownloadFileOptions, FileListResult, FileRef, ListFilesOptions, PromoteFileOptions, UploadFileOptions } from './types.js';
+import type { CortexClientOptions, SessionState, ChannelState, ReplyEscalationOptions, WebSocketCtor, FetchFn, FormDataCtor, DownloadFileOptions, FileListResult, FileRef, ListFilesOptions, PromoteFileOptions, UploadFileOptions } from './types.js';
 export interface CortexClientPlatform {
     WS: WebSocketCtor;
     fetchFn: FetchFn;
@@ -34,6 +34,7 @@ export declare class CortexClient {
         content: string;
         attachments?: string[];
     }): Promise<void>;
+    replyEscalation(options: ReplyEscalationOptions): Promise<void>;
     uploadFile(file: UploadInput, options?: UploadFileOptions): Promise<string>;
     uploadAttachment(file: UploadInput): Promise<string>;
     downloadFile(fileId: string, options?: DownloadFileOptions): Promise<Blob>;

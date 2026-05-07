@@ -97,6 +97,10 @@ export class CortexClient {
     async sendMessage(options) {
         await this._session.sendChatMessage(options.content, options.attachments);
     }
+    async replyEscalation(options) {
+        this._requireSessionId();
+        await this._session.sendEscalationReply(options.escalationId, options.waitToken, options.action, options.content, options.meta);
+    }
     async uploadFile(file, options = {}) {
         if (!this._accessToken)
             throw makeError('auth_invalid', 'Not connected');

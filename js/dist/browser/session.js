@@ -81,6 +81,45 @@ export function createSession(callbacks) {
         }
         return payload;
     }
+    function isPlainObject(value) {
+        return typeof value === 'object' && value !== null && !Array.isArray(value);
+    }
+    function validateEscalationReply(escalationId, waitToken, action, content) {
+        if (typeof escalationId !== 'string' || escalationId.trim() === '') {
+            throw makeError('transport_protocol_violation', 'escalationId is required');
+        }
+        if (typeof waitToken !== 'string' || waitToken.trim() === '') {
+            throw makeError('transport_protocol_violation', 'waitToken is required');
+        }
+        if (action !== 'continue' && action !== 'operator_input' && action !== 'reply_user') {
+            throw makeError('transport_protocol_violation', `Unsupported escalation reply action: ${action}`);
+        }
+        if (action === 'continue' && content === undefined) {
+            return;
+        }
+        if (typeof content === 'string') {
+            return;
+        }
+        if (isPlainObject(content)) {
+            return;
+        }
+        throw makeError('transport_protocol_violation', `content must be a string or object for escalation action ${action}`);
+    }
+    function buildEscalationReplyPayload(escalationId, waitToken, action, content, meta) {
+        validateEscalationReply(escalationId, waitToken, action, content);
+        const payload = {
+            escalation_id: escalationId.trim(),
+            action,
+            wait_token: waitToken.trim(),
+        };
+        if (content !== undefined) {
+            payload['content'] = content;
+        }
+        if (meta !== undefined) {
+            payload['meta'] = meta;
+        }
+        return payload;
+    }
     function handleSystemError(payload) {
         const code = typeof payload['code'] === 'string' ? payload['code'] : 'session_terminal';
         const message = typeof payload['message'] === 'string' ? payload['message'] : 'Runtime error';
@@ -127,6 +166,9 @@ export function createSession(callbacks) {
         },
         sendChatMessage(content, attachments) {
             return send(buildEnvelope('chat::message', buildMessagePayload(content, attachments)));
+        },
+        sendEscalationReply(escalationId, waitToken, action, content, meta) {
+            return send(buildEnvelope('escalation::reply', buildEscalationReplyPayload(escalationId, waitToken, action, content, meta)));
         },
         sendSystemTrigger(content, attachments) {
             const payload = { content };

@@ -11,6 +11,6 @@ export declare class CortexNodeClient extends CortexClient {
     uploadAttachment(file: UploadInput | Readable): Promise<string>;
 }
 export { CortexNodeClient as CortexClient };
-export type { CortexClientOptions, CortexMessage, SessionState, ChannelState, SendMessageOptions, FileScope, FileRef, FileListResult, FileReadyEvent, UploadFileOptions, DownloadFileOptions, ListFilesOptions, PromoteFileOptions, } from '../src/types.js';
+export type { CortexClientOptions, CortexMessage, EscalationReplyAction, EscalationReplyContent, SessionState, ReplyEscalationOptions, ChannelState, SendMessageOptions, FileScope, FileRef, FileListResult, FileReadyEvent, UploadFileOptions, DownloadFileOptions, ListFilesOptions, PromoteFileOptions, } from '../src/types.js';
 export { CortexError } from '../src/errors.js';
 //# sourceMappingURL=index.d.ts.map
