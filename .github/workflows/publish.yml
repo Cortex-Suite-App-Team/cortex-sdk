@@ -143,6 +143,8 @@ jobs:
       - name: Publish JS package to npm
         working-directory: js
         shell: bash
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
         run: |
           set -euo pipefail
           npm publish --access public --provenance --ignore-scripts
