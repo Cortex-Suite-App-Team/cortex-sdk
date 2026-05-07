@@ -8,6 +8,7 @@ on:
 
 permissions:
   contents: read
+  id-token: write
 
 concurrency:
   group: publish-${{ github.ref }}
@@ -19,9 +20,13 @@ jobs:
     env:
       REF_TYPE: ${{ github.ref_type }}
       REF_NAME: ${{ github.ref_name }}
+      EXPECTED_PACKAGE_NAME: "@cortex-suite/sdk"
+      EXPECTED_REPOSITORY_URL: git+https://github.com/${{ github.repository }}.git
     steps:
       - name: Check out repository
         uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
 
       - name: Set up Python
         uses: actions/setup-python@v6
@@ -38,6 +43,7 @@ jobs:
         run: |
           set -euo pipefail
 
+          test -f LICENSE
           test -f js/package.json
           test -f js/README.md
           test -f js/dist/browser/index.js
@@ -46,7 +52,30 @@ jobs:
           ls python/dist/*.whl >/dev/null
           ls python/dist/*.tar.gz >/dev/null
 
+          if ! [[ "$REF_NAME" =~ ^v[0-9]+\.[0-9]+\.[0-9]+([-.][0-9A-Za-z.-]+)?$ ]] && [ "$REF_TYPE" = "tag" ]; then
+            echo "::error::Release tag must look like vX.Y.Z or vX.Y.Z-suffix"
+            exit 1
+          fi
+
+          TAG_VERSION=""
+          if [ "$REF_TYPE" = "tag" ]; then
+            TAG_VERSION="${REF_NAME#v}"
+          else
+            mapfile -t HEAD_TAGS < <(git tag --points-at HEAD --list 'v*')
+            if [ "${#HEAD_TAGS[@]}" -eq 0 ]; then
+              echo "::error::workflow_dispatch must target a commit that already has a v* tag"
+              exit 1
+            fi
+            if [ "${#HEAD_TAGS[@]}" -gt 1 ]; then
+              echo "::error::workflow_dispatch found multiple v* tags on HEAD: ${HEAD_TAGS[*]}"
+              exit 1
+            fi
+            TAG_VERSION="${HEAD_TAGS[0]#v}"
+          fi
+
           JS_VERSION=$(node -p "require('./js/package.json').version")
+          JS_NAME=$(node -p "require('./js/package.json').name")
+          JS_REPOSITORY_URL=$(node -p "require('./js/package.json').repository.url")
           PY_VERSION=$(python - <<'PY'
           from pathlib import Path
           import re
@@ -64,21 +93,30 @@ jobs:
             exit 1
           fi
 
-          if [ "$REF_TYPE" = "tag" ]; then
-            TAG_VERSION="${REF_NAME#v}"
-            if [ "$TAG_VERSION" != "$JS_VERSION" ]; then
-              echo "::error::Tag version $TAG_VERSION does not match package version $JS_VERSION"
-              exit 1
-            fi
+          if [ "$JS_NAME" != "$EXPECTED_PACKAGE_NAME" ]; then
+            echo "::error::Unexpected package name: $JS_NAME"
+            exit 1
           fi
+
+          if [ "$JS_REPOSITORY_URL" != "$EXPECTED_REPOSITORY_URL" ]; then
+            echo "::error::repository.url mismatch: $JS_REPOSITORY_URL"
+            exit 1
+          fi
+
+          if [ "$TAG_VERSION" != "$JS_VERSION" ]; then
+            echo "::error::Tag version $TAG_VERSION does not match package version $JS_VERSION"
+            exit 1
+          fi
+
+      - name: Validate npm package contents
+        working-directory: js
+        shell: bash
+        run: npm pack --dry-run
 
   publish-pypi:
     runs-on: ubuntu-latest
     needs: verify-release
     environment: pypi
-    permissions:
-      contents: read
-      id-token: write
     steps:
       - name: Check out repository
         uses: actions/checkout@v5
@@ -87,3 +125,24 @@ jobs:
         uses: pypa/gh-action-pypi-publish@release/v1
         with:
           packages-dir: python/dist
+
+  publish-npm:
+    runs-on: ubuntu-latest
+    needs: verify-release
+    environment: npm
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v5
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v5
+        with:
+          node-version: "24"
+          registry-url: "https://registry.npmjs.org"
+
+      - name: Publish JS package to npm
+        working-directory: js
+        shell: bash
+        run: |
+          set -euo pipefail
+          npm publish --access public --provenance --ignore-scripts

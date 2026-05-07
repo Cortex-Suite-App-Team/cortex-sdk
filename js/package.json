@@ -1,85 +1,85 @@
 {
-  "name": "@cortex-suite/sdk",
-  "version": "1.0.11",
-  "description": "Cortex SDK — transport client for JS and Node.js",
-  "license": "MIT",
-  "repository": {
-    "type": "git",
-    "url": "git+https://github.com/Cortex-Suite-App-Team/cortex-sdk.git"
-  },
-  "type": "module",
-  "engines": {
-    "node": ">=18"
-  },
-  "exports": {
-    ".": {
-      "types": "./dist/types/index.d.ts",
-      "browser": "./dist/browser/index.js",
-      "node": "./dist/node/index.js",
-      "default": "./dist/node/index.js"
-    },
-    "./browser": {
-      "types": "./dist/browser/index.d.ts",
-      "import": "./dist/browser/index.js",
-      "default": "./dist/browser/index.js"
-    },
-    "./node": {
-      "types": "./dist/node/index.d.ts",
-      "import": "./dist/node/index.js",
-      "default": "./dist/node/index.js"
-    }
-  },
-  "main": "./dist/node/index.js",
-  "module": "./dist/node/index.js",
-  "browser": "./dist/browser/index.js",
-  "types": "./dist/types/index.d.ts",
-  "files": [
-    "dist/",
-    "README.md"
-  ],
-  "scripts": {
-    "generate:shared": "python ../scripts/generate_shared_artifacts.py",
-    "prepare:package": "python ../scripts/prepare_js_package.py",
-    "build:browser": "tsc -p tsconfig.json",
-    "build:node": "tsc -p tsconfig.node.json",
-    "build": "npm run generate:shared && npm run build:browser && npm run build:node && npm run prepare:package",
-    "test": "npm run generate:shared && node --experimental-vm-modules ./node_modules/jest/bin/jest.js",
-    "typecheck": "npm run generate:shared && tsc -p tsconfig.json --noEmit && tsc -p tsconfig.node.json --noEmit",
-    "smoke": "python ../scripts/check_js_package.py",
-    "prepublishOnly": "npm run build && npm test"
-  },
-  "dependencies": {
-    "ws": "^8.18.0"
-  },
-  "devDependencies": {
-    "ajv": "^8.17.1",
-    "@types/jest": "^29.5.12",
-    "@types/node": "^20.14.2",
-    "@types/ws": "^8.5.10",
-    "jest": "^29.7.0",
-    "ts-jest": "^29.1.4",
-    "typescript": "^5.4.5"
-  },
-  "jest": {
-    "preset": "ts-jest/presets/default-esm",
-    "testEnvironment": "node",
-    "extensionsToTreatAsEsm": [
-      ".ts"
-    ],
-    "moduleNameMapper": {
-      "^(\\.{1,2}/.*)\\.js$": "$1"
-    },
-    "transform": {
-      "^.+\\.tsx?$": [
-        "ts-jest",
-        {
-          "useESM": true
-        }
-      ]
-    },
-    "testMatch": [
-      "**/tests/**/*.test.ts"
-    ],
-    "testTimeout": 10000
-  }
+    "name":  "@cortex-suite/sdk",
+    "version":  "1.0.11",
+    "description":  "Cortex SDK — transport client for JS and Node.js",
+    "license":  "MIT",
+    "repository":  {
+                       "type":  "git",
+                       "url":  "git+https://github.com/Cortex-Suite-Team/cortex-sdk.git"
+                   },
+    "type":  "module",
+    "engines":  {
+                    "node":  "\u003e=18"
+                },
+    "exports":  {
+                    ".":  {
+                              "types":  "./dist/types/index.d.ts",
+                              "browser":  "./dist/browser/index.js",
+                              "node":  "./dist/node/index.js",
+                              "default":  "./dist/node/index.js"
+                          },
+                    "./browser":  {
+                                      "types":  "./dist/browser/index.d.ts",
+                                      "import":  "./dist/browser/index.js",
+                                      "default":  "./dist/browser/index.js"
+                                  },
+                    "./node":  {
+                                   "types":  "./dist/node/index.d.ts",
+                                   "import":  "./dist/node/index.js",
+                                   "default":  "./dist/node/index.js"
+                               }
+                },
+    "main":  "./dist/node/index.js",
+    "module":  "./dist/node/index.js",
+    "browser":  "./dist/browser/index.js",
+    "types":  "./dist/types/index.d.ts",
+    "files":  [
+                  "dist/",
+                  "README.md"
+              ],
+    "scripts":  {
+                    "generate:shared":  "python ../scripts/generate_shared_artifacts.py",
+                    "prepare:package":  "python ../scripts/prepare_js_package.py",
+                    "build:browser":  "tsc -p tsconfig.json",
+                    "build:node":  "tsc -p tsconfig.node.json",
+                    "build":  "npm run generate:shared \u0026\u0026 npm run build:browser \u0026\u0026 npm run build:node \u0026\u0026 npm run prepare:package",
+                    "test":  "npm run generate:shared \u0026\u0026 node --experimental-vm-modules ./node_modules/jest/bin/jest.js",
+                    "typecheck":  "npm run generate:shared \u0026\u0026 tsc -p tsconfig.json --noEmit \u0026\u0026 tsc -p tsconfig.node.json --noEmit",
+                    "smoke":  "python ../scripts/check_js_package.py",
+                    "prepublishOnly":  "npm run build \u0026\u0026 npm test"
+                },
+    "dependencies":  {
+                         "ws":  "^8.18.0"
+                     },
+    "devDependencies":  {
+                            "ajv":  "^8.17.1",
+                            "@types/jest":  "^29.5.12",
+                            "@types/node":  "^20.14.2",
+                            "@types/ws":  "^8.5.10",
+                            "jest":  "^29.7.0",
+                            "ts-jest":  "^29.1.4",
+                            "typescript":  "^5.4.5"
+                        },
+    "jest":  {
+                 "preset":  "ts-jest/presets/default-esm",
+                 "testEnvironment":  "node",
+                 "extensionsToTreatAsEsm":  [
+                                                ".ts"
+                                            ],
+                 "moduleNameMapper":  {
+                                          "^(\\.{1,2}/.*)\\.js$":  "$1"
+                                      },
+                 "transform":  {
+                                   "^.+\\.tsx?$":  [
+                                                       "ts-jest",
+                                                       {
+                                                           "useESM":  true
+                                                       }
+                                                   ]
+                               },
+                 "testMatch":  [
+                                   "**/tests/**/*.test.ts"
+                               ],
+                 "testTimeout":  10000
+             }
 }
