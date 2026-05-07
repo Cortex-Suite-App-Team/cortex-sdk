@@ -147,4 +147,4 @@ jobs:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
         run: |
           set -euo pipefail
-          npm publish --access public --provenance --ignore-scripts
+          npm publish --access public --ignore-scripts
