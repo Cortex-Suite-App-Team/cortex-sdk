@@ -43,6 +43,7 @@ await client.send_message(
 ## Receiving messages
 
 All messages from the runtime are delivered to the `onMessage` / `on_message` callback you provide at construction time.
+For JavaScript and Node.js, that constructor callback runs first, and you may attach additional listeners later with `client.onMessage(handler)`.
 
 ```js
 // JavaScript (Browser and Node.js)
@@ -68,6 +69,24 @@ client = CortexClient(
 ```
 
 The callback is called **synchronously** by the SDK's receive loop. Do not perform blocking I/O or long computations inside it. If you need async processing, see [Async message processing](#async-message-processing) below.
+
+### Additional JavaScript / Node.js subscriptions
+
+JavaScript and Node.js clients also support additive message subscriptions:
+
+```js
+const unsubscribe = client.onMessage((msg) => {
+  console.log("secondary listener", msg.type);
+});
+```
+
+Rules:
+
+- the constructor `onMessage` callback is still required
+- the constructor callback runs first
+- subscribed handlers run after that in insertion order
+- if one subscribed handler throws, later handlers still receive the message
+- `unsubscribe()` removes only that subscribed handler
 
 ---
 

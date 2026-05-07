@@ -7,6 +7,7 @@ import { createSession } from './session.js';
 import { uploadFile } from './upload.js';
 export class CortexClient {
     constructor(options, platform) {
+        this._messageHandlers = new Set();
         this._channelState = 'CLOSED';
         this._accessToken = null;
         this._refreshToken = null;
@@ -40,14 +41,14 @@ export class CortexClient {
                     this._liveness?.handlePong(msg.payload['heartbeat_id']);
                     return; // pong is internal — not forwarded to user
                 }
-                options.onMessage(msg);
+                this._dispatchMessage(msg);
             },
             onFatalError: (err) => {
                 this._channelState = 'AUTH_FAILED';
                 this._stopBackgroundActivity();
                 // re-throw via disconnect so the user sees it
                 this._transport.close();
-                options.onMessage({
+                this._dispatchMessage({
                     type: 'system::error',
                     schema: '1.0',
                     session_id: this._session.sessionId ?? '',
@@ -63,6 +64,12 @@ export class CortexClient {
     get sessionState() { return this._session.sessionState; }
     get channelState() { return this._channelState; }
     get sessionId() { return this._session.sessionId; }
+    onMessage(handler) {
+        this._messageHandlers.add(handler);
+        return () => {
+            this._messageHandlers.delete(handler);
+        };
+    }
     async connect() {
         this._disconnectRequested = false;
         this._reconnectAttempt = 0;
@@ -302,6 +309,23 @@ export class CortexClient {
         this._liveness?.stop();
         this._stopTokenRefreshTimer();
         this._cancelPendingDelays();
+    }
+    _dispatchMessage(message) {
+        try {
+            this._options.onMessage(message);
+        }
+        catch {
+            // Preserve delivery to subscribed handlers even if the constructor callback throws.
+        }
+        const handlers = Array.from(this._messageHandlers);
+        for (const handler of handlers) {
+            try {
+                handler(message);
+            }
+            catch {
+                // Isolate subscription errors so other handlers still receive the message.
+            }
+        }
     }
     _shouldStopReconnect() {
         return this._disconnectRequested || this._channelState === 'AUTH_FAILED';

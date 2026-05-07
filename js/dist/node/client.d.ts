@@ -1,5 +1,5 @@
 import { type UploadInput } from './upload.js';
-import type { CortexClientOptions, SessionState, ChannelState, ReplyEscalationOptions, WebSocketCtor, FetchFn, FormDataCtor, DownloadFileOptions, FileListResult, FileRef, ListFilesOptions, PromoteFileOptions, UploadFileOptions } from './types.js';
+import type { CortexClientOptions, CortexMessage, SessionState, ChannelState, ReplyEscalationOptions, WebSocketCtor, FetchFn, FormDataCtor, DownloadFileOptions, FileListResult, FileRef, ListFilesOptions, PromoteFileOptions, UploadFileOptions } from './types.js';
 export interface CortexClientPlatform {
     WS: WebSocketCtor;
     fetchFn: FetchFn;
@@ -9,6 +9,7 @@ export interface CortexClientPlatform {
 export declare class CortexClient {
     private readonly _options;
     private readonly _platform;
+    private readonly _messageHandlers;
     private _channelState;
     private _accessToken;
     private _refreshToken;
@@ -28,6 +29,7 @@ export declare class CortexClient {
     get sessionState(): SessionState;
     get channelState(): ChannelState;
     get sessionId(): string | null;
+    onMessage(handler: (message: CortexMessage) => void): () => void;
     connect(): Promise<void>;
     disconnect(): Promise<void>;
     sendMessage(options: {
@@ -49,6 +51,7 @@ export declare class CortexClient {
     private _scheduleTokenRefresh;
     private _stopTokenRefreshTimer;
     private _stopBackgroundActivity;
+    private _dispatchMessage;
     private _shouldStopReconnect;
     private _createCancelableDelay;
     private _cancelPendingDelays;

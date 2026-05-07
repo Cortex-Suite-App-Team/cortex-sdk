@@ -76,6 +76,28 @@ await client.disconnect()
 
 ---
 
+### `onMessage(handler)` (JavaScript / Node.js only)
+
+Registers an additional inbound message handler without replacing the constructor callback.
+
+```js
+const unsubscribe = client.onMessage((message) => {
+  console.log(message.type, message.payload);
+});
+```
+
+Behavior:
+
+- constructor `onMessage` remains required
+- constructor `onMessage` runs first
+- subscribed handlers run after that in insertion order
+- subscribed handler failures are isolated so later handlers still run
+- the return value unsubscribes that one handler
+
+This method is additive transport subscription plumbing. It does not replace the main callback contract.
+
+---
+
 ### `sendMessage(options)` / `send_message(content, attachments?)`
 
 Sends a chat message to the runtime over the WebSocket.
