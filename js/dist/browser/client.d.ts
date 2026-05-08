@@ -33,8 +33,9 @@ export declare class CortexClient {
     connect(): Promise<void>;
     disconnect(): Promise<void>;
     sendMessage(options: {
-        content: string;
-        attachments?: string[];
+        content: unknown;
+        attachments?: unknown[];
+        meta?: Record<string, unknown>;
     }): Promise<void>;
     replyEscalation(options: ReplyEscalationOptions): Promise<void>;
     uploadFile(file: UploadInput, options?: UploadFileOptions): Promise<string>;

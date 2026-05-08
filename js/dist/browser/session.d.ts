@@ -8,7 +8,7 @@ export interface SessionController {
     sendInit(bootstrap: RuntimeBootstrap): Promise<void>;
     sendResync(): Promise<void>;
     sendStop(): Promise<void>;
-    sendChatMessage(content: unknown, attachments: unknown[] | undefined): Promise<void>;
+    sendChatMessage(content: unknown, attachments: unknown[] | undefined, meta?: Record<string, unknown>): Promise<void>;
     sendEscalationReply(escalationId: string, waitToken: string, action: EscalationReplyAction, content: EscalationReplyContent | undefined, meta: Record<string, unknown> | undefined): Promise<void>;
     sendSystemTrigger(content: unknown, attachments: unknown[] | undefined): Promise<void>;
     sendTrigger(payload: Record<string, unknown>): Promise<void>;

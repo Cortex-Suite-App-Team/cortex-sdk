@@ -74,11 +74,16 @@ export function createSession(callbacks) {
         }
         return `${prefix}_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 12)}`;
     }
-    function buildMessagePayload(content, attachments) {
+    function buildMessagePayload(content, attachments, meta) {
         const payload = { content, role: 'user' };
-        if (attachments && attachments.length > 0) {
-            payload['meta'] = { attachments };
-        }
+        const combinedMeta = {};
+        // meta merged first; official attachments param always wins
+        if (meta)
+            Object.assign(combinedMeta, meta);
+        if (attachments && attachments.length > 0)
+            combinedMeta['attachments'] = attachments;
+        if (Object.keys(combinedMeta).length > 0)
+            payload['meta'] = combinedMeta;
         return payload;
     }
     function isPlainObject(value) {
@@ -164,8 +169,8 @@ export function createSession(callbacks) {
         sendStop() {
             return send(buildEnvelope('sandbox::stop', {}));
         },
-        sendChatMessage(content, attachments) {
-            return send(buildEnvelope('chat::message', buildMessagePayload(content, attachments)));
+        sendChatMessage(content, attachments, meta) {
+            return send(buildEnvelope('chat::message', buildMessagePayload(content, attachments, meta)));
         },
         sendEscalationReply(escalationId, waitToken, action, content, meta) {
             return send(buildEnvelope('escalation::reply', buildEscalationReplyPayload(escalationId, waitToken, action, content, meta)));

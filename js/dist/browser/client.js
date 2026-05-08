@@ -102,7 +102,7 @@ export class CortexClient {
         this._transport.close();
     }
     async sendMessage(options) {
-        await this._session.sendChatMessage(options.content, options.attachments);
+        await this._session.sendChatMessage(options.content, options.attachments, options.meta);
     }
     async replyEscalation(options) {
         this._requireSessionId();
