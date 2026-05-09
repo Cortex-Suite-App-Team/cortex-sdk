@@ -84,6 +84,7 @@ export interface RuntimeBootstrap {
 export interface SendMessageOptions {
     content: unknown;
     attachments?: unknown[];
+    meta?: Record<string, unknown>;
 }
 export type EscalationReplyAction = 'continue' | 'operator_input' | 'reply_user';
 export type EscalationReplyContent = string | Record<string, unknown>;
@@ -93,6 +94,19 @@ export interface ReplyEscalationOptions {
     action: EscalationReplyAction;
     content?: EscalationReplyContent;
     meta?: Record<string, unknown>;
+}
+/** Transient UI state emitted by SessionManager. Never stored in transcript. */
+export interface SystemStateMessage {
+    type: 'system::state';
+    payload: {
+        content: string[];
+        meta: {
+            state: 'working' | 'waiting' | 'idle' | 'error';
+            label?: string;
+            ttl_ms?: number;
+            correlation_id?: string;
+        };
+    };
 }
 /** Platform-specific WebSocket constructor passed in by each entry point. */
 export type WebSocketCtor = new (url: string, protocols: string[]) => WebSocketLike;
