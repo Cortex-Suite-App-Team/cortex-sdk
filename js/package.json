@@ -51,6 +51,9 @@
   "dependencies": {
     "ws": "^8.18.0"
   },
+  "overrides": {
+    "fast-uri": ">=3.1.2"
+  },
   "devDependencies": {
     "ajv": "^8.17.1",
     "@types/jest": "^29.5.12",

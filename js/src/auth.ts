@@ -22,6 +22,14 @@ function parseJwtExp(token: string): number | null {
   }
 }
 
+function trimTrailingSlashes(value: string): string {
+  let end = value.length;
+  while (end > 0 && value.charCodeAt(end - 1) === 47) {
+    end--;
+  }
+  return value.slice(0, end);
+}
+
 export async function exchangeApiKey(
   apiKey: string,
   fetchFn: FetchFn,
@@ -73,7 +81,7 @@ export function isTokenExpiringSoon(accessToken: string): boolean {
 }
 
 export function normalizeAuthBaseUrl(authUrl: string): string {
-  let normalized = authUrl.replace(/\/+$/, '');
+  let normalized = trimTrailingSlashes(authUrl);
   // Guard: consumer may have passed a full endpoint instead of the base URL.
   // Strip known auth paths and warn so developers catch the misconfiguration early.
   for (const knownPath of [AUTH_TOKEN_PATH, AUTH_REFRESH_PATH]) {
