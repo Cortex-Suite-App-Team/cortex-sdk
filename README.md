@@ -1,6 +1,6 @@
 # Cortex SDK
 
-Transport client for [Cortex](https://getcortex.ai) — real-time chat and session management over WebSocket.
+Transport client for [Cortex](https://cortexsuite.app/) — real-time chat and session management over WebSocket.
 
 Available for JavaScript/TypeScript (browser and Node.js) and Python.
 
@@ -20,39 +20,43 @@ pip install cortex-suite-sdk
 
 ## Quick start
 
-```ts
+```js
 import { CortexClient } from "@cortex-suite/sdk";
 
 const client = new CortexClient({
-  endpoint: "wss://your-cortex-instance/ws",
-  token: "YOUR_TOKEN",
+  apiKey: "your-api-key",
+  onMessage: (msg) => {
+    console.log(msg.type, msg.payload);
+  },
 });
 
 await client.connect();
-
-client.on("message", (msg) => {
-  console.log(msg.text);
-});
-
-await client.send("Hello");
+await client.sendMessage({ content: "Hello, Cortex!" });
+await client.disconnect();
 ```
 
 ```python
+import asyncio
 from cortex_sdk import CortexClient
 
-client = CortexClient(
-    endpoint="wss://your-cortex-instance/ws",
-    token="YOUR_TOKEN",
-)
+def on_message(msg):
+    print(msg["type"], msg["payload"])
 
-async with client:
-    async for message in client.stream("Hello"):
-        print(message.text)
+async def main():
+    client = CortexClient(
+        api_key="your-api-key",
+        on_message=on_message,
+    )
+    await client.connect()
+    await client.send_message(content="Hello, Cortex!")
+    await client.disconnect()
+
+asyncio.run(main())
 ```
 
 ## Documentation
 
-Full documentation is in [`docs/`](docs/public/).
+Full documentation is in [`docs/public/`](docs/public/).
 
 ## License
 
