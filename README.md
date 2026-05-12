@@ -1,77 +1,59 @@
-# Cortex SDK Source Repo
+# Cortex SDK
 
-Private source repository for the Cortex SDK transport client.
+Transport client for [Cortex](https://getcortex.ai) — real-time chat and session management over WebSocket.
 
-This repo contains:
+Available for JavaScript/TypeScript (browser and Node.js) and Python.
 
-- shared source-of-truth artifacts
-- JavaScript browser and Node.js bindings
-- Python binding
-- tests, packaging, and CI support
+## Installation
 
-## Release Helper Docs
-
-- [Release Cheatsheet](docs/release_cheatsheet.md)
-
-## Local CI Commands
-
-Shared validation:
+### JavaScript / TypeScript
 
 ```bash
-python scripts/generate_shared_artifacts.py
-git diff --exit-code -- js/src/generated python/cortex_sdk/_generated_constants.py python/cortex_sdk/_generated_errors.py
+npm install @cortex-suite/sdk
 ```
 
-JavaScript:
+### Python
 
 ```bash
-npm --prefix js ci
-npm --prefix js test
-npm --prefix js run build
-npm --prefix js run smoke
+pip install cortex-suite-sdk
 ```
 
-Python:
+## Quick start
 
-```bash
-python -m pip install -e "./python[dev]"
-python -m pytest python/tests
-python -m build python
-python scripts/smoke_python_package.py
+```ts
+import { CortexClient } from "@cortex-suite/sdk";
+
+const client = new CortexClient({
+  endpoint: "wss://your-cortex-instance/ws",
+  token: "YOUR_TOKEN",
+});
+
+await client.connect();
+
+client.on("message", (msg) => {
+  console.log(msg.text);
+});
+
+await client.send("Hello");
 ```
 
-Актуальный релизный сценарий.
+```python
+from cortex_sdk import CortexClient
 
-1. Зафиксировать и отправить рабочие изменения в `cortex-sdk`:
+client = CortexClient(
+    endpoint="wss://your-cortex-instance/ws",
+    token="YOUR_TOKEN",
+)
 
-```powershell
-cd D:\GitHub\Cortex\cortex-sdk
-git add .
-git commit -m "Update SDK to 1.0.17"
-git push origin main
+async with client:
+    async for message in client.stream("Hello"):
+        print(message.text)
 ```
 
-2. Запустить релиз из `cortex-sdk`:
+## Documentation
 
-```powershell
-cd D:\GitHub\Cortex\cortex-sdk
-powershell -ExecutionPolicy Bypass -File .\scripts\release.ps1 -Version 1.0.17
-```
+Full documentation is in [`docs/`](docs/public/).
 
-Скрипт сам:
-- собирает и тестирует SDK;
-- синхронизирует `public\cortex-sdk`;
-- создаёт commit в `public\cortex-sdk`;
-- создаёт tag `v1.0.17` в `public\cortex-sdk`.
+## License
 
-3. Отправить public repo и тег:
-
-```powershell
-cd D:\GitHub\Cortex\public\cortex-sdk
-git push origin main
-git push origin v1.0.17
-```
-
-4. Дождаться завершения `publish.yml` в `public\cortex-sdk`.
-
-Руками `npm publish` делать не нужно.
+MIT
