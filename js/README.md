@@ -42,7 +42,7 @@ main().catch(console.error);
 
 ## API
 
-See the [full API reference](../docs/api-reference.md).
+See the [full API reference](../docs/04_api_reference.md).
 `authUrl` is optional; if omitted, the SDK uses its default auth base URL.
 
 ## Error handling

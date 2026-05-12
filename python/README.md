@@ -31,7 +31,7 @@ asyncio.run(main())
 
 ## API
 
-See the [full API reference](../docs/api-reference.md).
+See the [full API reference](../docs/04_api_reference.md).
 `auth_url` is optional; if omitted, the SDK uses its default auth base URL.
 
 ## Error handling

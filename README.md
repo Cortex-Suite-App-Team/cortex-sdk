@@ -1,42 +1,77 @@
-# Cortex SDK
+# Cortex SDK Source Repo
 
-Public distribution repository for the Cortex SDK transport client.
+Private source repository for the Cortex SDK transport client.
 
-This repo is meant to stay small and public-facing. It contains:
+This repo contains:
 
-- `LICENSE` for the public SDK distribution
-- public developer docs in `docs/`
-- an npm-ready JavaScript / Node.js package in `js/`
-- PyPI-ready Python artifacts in `python/dist/`
-- a publish workflow in `.github/workflows/publish.yml`
+- shared source-of-truth artifacts
+- JavaScript browser and Node.js bindings
+- Python binding
+- tests, packaging, and CI support
 
-This repo intentionally does not contain the private source tree, internal tests, or planning materials.
+## Release Helper Docs
 
-## Install
+- [Release Cheatsheet](docs/release_cheatsheet.md)
+
+## Local CI Commands
+
+Shared validation:
 
 ```bash
-npm install @cortex-suite/sdk
+python scripts/generate_shared_artifacts.py
+git diff --exit-code -- js/src/generated python/cortex_sdk/_generated_constants.py python/cortex_sdk/_generated_errors.py
 ```
+
+JavaScript:
 
 ```bash
-pip install cortex-suite-sdk
+npm --prefix js ci
+npm --prefix js test
+npm --prefix js run build
+npm --prefix js run smoke
 ```
 
-## Documentation
+Python:
 
-Start here:
+```bash
+python -m pip install -e "./python[dev]"
+python -m pytest python/tests
+python -m build python
+python scripts/smoke_python_package.py
+```
 
-- [Developer Manual](docs/index.md)
-- [Getting Started](docs/getting-started.md)
-- [Configuration](docs/configuration.md)
-- [Connecting](docs/connecting.md)
-- [API Reference](docs/api-reference.md)
+Актуальный релизный сценарий.
 
-## Repository Layout
+1. Зафиксировать и отправить рабочие изменения в `cortex-sdk`:
 
-- `LICENSE` public SDK license
-- `docs/` public SDK documentation
-- `js/` publishable npm package contents
-- `python/dist/` wheel and sdist ready for PyPI
-- `.github/workflows/publish.yml` trusted-publishing workflow for PyPI and npm
+```powershell
+cd D:\GitHub\Cortex\cortex-sdk
+git add .
+git commit -m "Update SDK to 1.0.17"
+git push origin main
+```
 
+2. Запустить релиз из `cortex-sdk`:
+
+```powershell
+cd D:\GitHub\Cortex\cortex-sdk
+powershell -ExecutionPolicy Bypass -File .\scripts\release.ps1 -Version 1.0.17
+```
+
+Скрипт сам:
+- собирает и тестирует SDK;
+- синхронизирует `public\cortex-sdk`;
+- создаёт commit в `public\cortex-sdk`;
+- создаёт tag `v1.0.17` в `public\cortex-sdk`.
+
+3. Отправить public repo и тег:
+
+```powershell
+cd D:\GitHub\Cortex\public\cortex-sdk
+git push origin main
+git push origin v1.0.17
+```
+
+4. Дождаться завершения `publish.yml` в `public\cortex-sdk`.
+
+Руками `npm publish` делать не нужно.

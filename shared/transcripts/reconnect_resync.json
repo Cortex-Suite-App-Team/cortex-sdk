@@ -1,0 +1,64 @@
+{
+  "name": "reconnect_resync",
+  "description": "Channel drops and reconnects. After reconnect the SDK sends system::resync and the server replays state.",
+  "steps": [
+    {
+      "direction": "client",
+      "type": "system::init",
+      "meta": {
+        "client_msg_id": "cli_init_005"
+      },
+      "payload": {
+        "execution_mode": "production",
+        "bundle_url": "/api/runtime/releases/42/bundle/",
+        "checksum": "sha256:release_42"
+      },
+      "note": "Initial connection and session init; payload copied from runtime_bootstrap returned by /auth/token; session_id omitted on outbound system::init; SDK generates meta.client_msg_id"
+    },
+    {
+      "direction": "server",
+      "type": "system::opened",
+      "payload": {
+        "status": "initializing",
+        "client_msg_id": "cli_init_005",
+        "execution_mode": "production"
+      },
+      "note": "session_id: sess_abc123, seq: 1 — canonical bootstrap ack from SessionManager"
+    },
+    {
+      "direction": "client",
+      "type": "chat::message",
+      "payload": {
+        "content": "Start a long task",
+        "role": "user"
+      },
+      "note": "session_id: sess_abc123 — message sent after system::opened and before channel drop"
+    },
+    {
+      "note": "--- channel drop: WebSocket closes unexpectedly ---"
+    },
+    {
+      "note": "--- SDK enters RECONNECTING state; reconnect backoff fires after 1s ---"
+    },
+    {
+      "note": "--- new WebSocket connection established; new JWT subprotocol handshake ---"
+    },
+    {
+      "direction": "client",
+      "type": "system::resync",
+      "payload": { "last_seq": 0 },
+      "note": "session_id: sess_abc123 — SDK sends resync with last_seq=1 because system::opened was already received before the channel drop; server replays pending state"
+    },
+    {
+      "direction": "server",
+      "type": "chat::answer",
+      "payload": {
+        "content": "Long task completed",
+        "role": "assistant",
+        "answer_kind": "final",
+        "turn_id": "turn_003"
+      },
+      "note": "session_id: sess_abc123, seq: 2 — server replays the answer that was missed during the channel drop"
+    }
+  ]
+}

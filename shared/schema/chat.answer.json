@@ -1,0 +1,28 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://cortex.local/sdk/schema/chat.answer.json",
+  "title": "chat::answer Payload",
+  "description": "Final answer from the runtime. Terminates a turn. answer_kind=echo is the init acknowledgement; answer_kind=final is a regular answer.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["content", "role", "answer_kind", "turn_id"],
+  "properties": {
+    "content": {
+      "type": "string",
+      "description": "Assistant-visible answer content"
+    },
+    "role": {
+      "type": "string",
+      "const": "assistant"
+    },
+    "answer_kind": {
+      "type": "string",
+      "enum": ["final", "echo"],
+      "description": "final = regular answer; echo = init acknowledgement"
+    },
+    "turn_id": {
+      "type": "string",
+      "description": "Turn correlation id; matches turn_id of preceding chat::partial messages if any"
+    }
+  }
+}

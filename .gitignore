@@ -1,9 +1,48 @@
-.DS_Store
-Thumbs.db
-.venv/
-venv/
-node_modules/
 __pycache__/
 *.py[cod]
 .pytest_cache/
 .mypy_cache/
+
+# Python packaging / coverage
+*.egg-info/
+build/
+.eggs/
+.coverage
+.coverage.*
+htmlcov/
+.tox/
+.ruff_cache/
+
+# Virtual environments
+.venv/
+venv/
+env/
+ENV/
+
+# Generated build artifacts — do not commit
+js/dist/
+python/dist/
+
+# Node / JS tooling
+node_modules/
+js/node_modules/
+coverage/
+js/coverage/
+*.tsbuildinfo
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Environment / local config
+.env
+.env.*
+!.env.example
+
+# IDE / OS
+.idea/
+.vscode/
+.claude/
+*.swp
+*.swo
+.DS_Store
+Thumbs.db

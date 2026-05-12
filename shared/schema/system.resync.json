@@ -1,0 +1,15 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://cortex.local/sdk/schema/system.resync.json",
+  "title": "system::resync Payload",
+  "description": "Resync request sent by client after reconnect. Carries last_seq so the server can replay missed messages.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["last_seq"],
+  "properties": {
+    "last_seq": {
+      "type": "integer",
+      "description": "Sequence number of the last message the client received before the channel dropped. Server replays all messages with seq > last_seq."
+    }
+  }
+}

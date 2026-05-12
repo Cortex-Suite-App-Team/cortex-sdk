@@ -1,0 +1,24 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://cortex.local/sdk/schema/system.pong.json",
+  "title": "system::pong Payload",
+  "description": "Heartbeat response from server. heartbeat_id echoes the ping. Receipt resets the pong timeout.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["heartbeat_id", "channel_id", "server_ts"],
+  "properties": {
+    "heartbeat_id": {
+      "type": "string",
+      "description": "Echoes the heartbeat_id from the corresponding system::ping"
+    },
+    "channel_id": {
+      "type": "string",
+      "description": "Channel identity"
+    },
+    "server_ts": {
+      "type": "string",
+      "format": "date-time",
+      "description": "Server-side timestamp at time of pong"
+    }
+  }
+}

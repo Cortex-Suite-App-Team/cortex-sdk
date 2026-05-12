@@ -1,0 +1,30 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://cortex.local/sdk/schema/chat.message.json",
+  "title": "chat::message Payload",
+  "description": "User message sent to the runtime. Attachment refs use payload.meta.attachments.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["content", "role"],
+  "properties": {
+    "content": {
+      "description": "User-visible message content"
+    },
+    "meta": {
+      "type": "object",
+      "additionalProperties": true,
+      "properties": {
+        "attachments": {
+          "type": "array",
+          "items": {},
+          "description": "Optional attachment reference objects or IDs from uploadAttachment()."
+        }
+      },
+      "description": "Optional user-message metadata"
+    },
+    "role": {
+      "type": "string",
+      "const": "user"
+    }
+  }
+}

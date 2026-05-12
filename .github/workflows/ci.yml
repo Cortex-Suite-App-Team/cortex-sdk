@@ -1,0 +1,175 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+
+permissions:
+  contents: read
+
+env:
+  NODE_VERSION: "20"
+  PYTHON_VERSION: "3.12"
+
+jobs:
+  validate-shared:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v5
+
+      - name: Set up Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+
+      - name: Validate generated shared artifacts
+        run: |
+          python scripts/generate_shared_artifacts.py
+          if ! git diff --quiet -- js/src/generated python/cortex_sdk/_generated_constants.py python/cortex_sdk/_generated_errors.py; then
+            echo "::error::Generated shared artifacts are out of date. Run 'python scripts/generate_shared_artifacts.py' and commit the results."
+            git --no-pager diff -- js/src/generated python/cortex_sdk/_generated_constants.py python/cortex_sdk/_generated_errors.py
+            exit 1
+          fi
+
+  test-js:
+    runs-on: ubuntu-latest
+    needs: validate-shared
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v5
+
+      - name: Set up Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+          cache: pip
+          cache-dependency-path: python/pyproject.toml
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v5
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+          cache-dependency-path: js/package-lock.json
+
+      - name: Install JS dependencies
+        working-directory: js
+        run: npm ci
+
+      - name: Run JS tests
+        working-directory: js
+        run: npm test
+
+  test-python:
+    runs-on: ubuntu-latest
+    needs: validate-shared
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v5
+
+      - name: Set up Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+          cache: pip
+          cache-dependency-path: python/pyproject.toml
+
+      - name: Install Python test dependencies
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install -e "./python[dev]"
+
+      - name: Run Python tests
+        run: python -m pytest python/tests
+
+  build-js:
+    runs-on: ubuntu-latest
+    needs:
+      - validate-shared
+      - test-js
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v5
+
+      - name: Set up Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+          cache: pip
+          cache-dependency-path: python/pyproject.toml
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v5
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+          cache-dependency-path: js/package-lock.json
+
+      - name: Install JS dependencies
+        working-directory: js
+        run: npm ci
+
+      - name: Build JS artifacts
+        run: |
+          rm -rf js/dist
+          npm --prefix js run build
+
+      - name: Smoke-check JS package artifacts
+        working-directory: js
+        run: npm run smoke
+
+      - name: Upload browser artifacts
+        uses: actions/upload-artifact@v6
+        with:
+          name: js-browser-artifacts
+          path: js/dist/browser
+          if-no-files-found: error
+          retention-days: 14
+
+      - name: Upload Node artifacts
+        uses: actions/upload-artifact@v6
+        with:
+          name: js-node-artifacts
+          path: |
+            js/dist/node
+            js/dist/types
+          if-no-files-found: error
+          retention-days: 14
+
+  build-python:
+    runs-on: ubuntu-latest
+    needs:
+      - validate-shared
+      - test-python
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v5
+
+      - name: Set up Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+          cache: pip
+          cache-dependency-path: python/pyproject.toml
+
+      - name: Install Python build tooling
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install build
+
+      - name: Build Python package artifacts
+        run: |
+          rm -rf python/dist
+          python -m build python
+
+      - name: Smoke-check Python package artifacts
+        run: python scripts/smoke_python_package.py
+
+      - name: Upload Python package artifacts
+        uses: actions/upload-artifact@v6
+        with:
+          name: python-package-artifacts
+          path: python/dist/*
+          if-no-files-found: error
+          retention-days: 14

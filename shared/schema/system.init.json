@@ -1,0 +1,41 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://cortex.local/sdk/schema/system.init.json",
+  "title": "system::init Payload",
+  "description": "Session initialization. Sent by client immediately after WebSocket connect. session_id is NOT present in the envelope — the server allocates it.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["execution_mode", "bundle_url", "checksum"],
+  "properties": {
+    "execution_mode": {
+      "type": "string",
+      "enum": ["production", "sandbox"]
+    },
+    "bundle_url": {
+      "type": "string",
+      "description": "Canonical bundle source URL"
+    },
+    "checksum": {
+      "type": "string",
+      "description": "Bundle checksum for integrity verification"
+    },
+    "artifact_id": {
+      "type": "string",
+      "description": "Sandbox-only execution metadata"
+    },
+    "artifact_kind": {
+      "type": "string",
+      "enum": ["graph", "stream"],
+      "description": "Sandbox-only execution metadata"
+    },
+    "run_mode": {
+      "type": "string",
+      "enum": ["normal", "debug"],
+      "description": "Sandbox-only execution metadata"
+    },
+    "trigger_payload": {
+      "type": "object",
+      "description": "Optional Sandbox-local first trigger payload"
+    }
+  }
+}

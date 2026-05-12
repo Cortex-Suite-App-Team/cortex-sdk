@@ -1,0 +1,57 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://cortex.local/sdk/schema/escalation.reply.json",
+  "title": "escalation::reply Payload",
+  "description": "Operator reply to an escalation::request. Resolves the waiting point identified by wait_token.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["escalation_id", "action", "wait_token"],
+  "properties": {
+    "escalation_id": {
+      "type": "string",
+      "description": "Escalation identity from the corresponding escalation::request"
+    },
+    "action": {
+      "type": "string",
+      "enum": ["continue", "operator_input", "reply_user"],
+      "description": "How to resolve the escalation"
+    },
+    "wait_token": {
+      "type": "string",
+      "description": "Canonical waiting-point identity from the escalation::request"
+    },
+    "content": {
+      "oneOf": [
+        { "type": "string" },
+        { "type": "object" }
+      ],
+      "description": "Optional operator payload or reply content"
+    },
+    "meta": {
+      "type": "object",
+      "description": "Optional reply-side metadata"
+    }
+  },
+  "allOf": [
+    {
+      "if": {
+        "properties": {
+          "action": { "const": "operator_input" }
+        }
+      },
+      "then": {
+        "required": ["content"]
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "action": { "const": "reply_user" }
+        }
+      },
+      "then": {
+        "required": ["content"]
+      }
+    }
+  ]
+}

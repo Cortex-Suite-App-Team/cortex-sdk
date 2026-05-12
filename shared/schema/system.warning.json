@@ -1,0 +1,23 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://cortex.local/sdk/schema/system.warning.json",
+  "title": "system::warning Payload",
+  "description": "Non-fatal warning from the runtime. Does not terminate the session.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["code", "message"],
+  "properties": {
+    "code": {
+      "type": "string",
+      "description": "Canonical warning code"
+    },
+    "message": {
+      "type": "string",
+      "description": "Human-readable explanation"
+    },
+    "node_key": {
+      "type": "string",
+      "description": "Optional execution/source correlation key"
+    }
+  }
+}

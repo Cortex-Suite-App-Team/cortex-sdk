@@ -1,0 +1,26 @@
+from __future__ import annotations
+
+# Generated from shared/constants.json. Do not edit manually.
+
+DEFAULT_AUTH_URL: str = 'https://auth.cortexsuite.app'
+AUTH_TOKEN_PATH: str = '/auth/token'
+AUTH_REFRESH_PATH: str = '/auth/refresh'
+WS_SUBPROTOCOL: str = 'cortex-sdk.v1'
+WS_SUBPROTOCOL_JWT_PREFIX: str = 'cortex-sdk.jwt.'
+SCHEMA_VERSION: str = '1.0'
+
+DEFAULT_CONNECT_TIMEOUT_MS: int = 10000
+DEFAULT_SEND_TIMEOUT_MS: int = 10000
+DEFAULT_RESYNC_TIMEOUT_MS: int = 15000
+DEFAULT_PING_INTERVAL_MS: int = 15000
+DEFAULT_PONG_TIMEOUT_MS: int = 5000
+DEFAULT_STALE_THRESHOLD_MS: int = 45000
+TOKEN_REFRESH_BUFFER_MS: int = 60000
+
+RECONNECT_BACKOFF_MS: tuple[int, ...] = (1000, 2000, 5000, 10000, 20000, 30000,)
+
+# Deprecated compatibility aliases. Prefer DEFAULT_AUTH_URL/AUTH_TOKEN_PATH,
+# DEFAULT_AUTH_URL/AUTH_REFRESH_PATH, and WS_SUBPROTOCOL directly.
+CORTEX_AUTH_URL: str = DEFAULT_AUTH_URL + AUTH_TOKEN_PATH
+CORTEX_REFRESH_URL: str = DEFAULT_AUTH_URL + AUTH_REFRESH_PATH
+WS_SUBPROTOCOL_BASE: str = WS_SUBPROTOCOL

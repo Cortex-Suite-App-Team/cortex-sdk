@@ -1,0 +1,61 @@
+{
+  "name": "file_upload",
+  "description": "Client uploads a file over HTTP, receives an attachment_id, then sends a message with the attachment reference.",
+  "steps": [
+    {
+      "direction": "client",
+      "type": "system::init",
+      "meta": {
+        "client_msg_id": "cli_init_003"
+      },
+      "payload": {
+        "execution_mode": "production",
+        "bundle_url": "/api/runtime/releases/42/bundle/",
+        "checksum": "sha256:release_42"
+      },
+      "note": "payload copied from runtime_bootstrap returned by /auth/token; session_id omitted on outbound system::init; SDK generates meta.client_msg_id"
+    },
+    {
+      "direction": "server",
+      "type": "system::opened",
+      "payload": {
+        "status": "initializing",
+        "client_msg_id": "cli_init_003",
+        "execution_mode": "production"
+      },
+      "note": "session_id: sess_abc123, seq: 1 — canonical bootstrap ack from SessionManager"
+    },
+    {
+      "note": "--- OUT OF BAND: client calls uploadAttachment(file) ---"
+    },
+    {
+      "note": "--- OUT OF BAND: SDK sends HTTP POST multipart/form-data to runtime upload endpoint with Authorization: Bearer <access_token> ---"
+    },
+    {
+      "note": "--- OUT OF BAND: server responds { \"attachment_id\": \"att_xyz789\" } ---"
+    },
+    {
+      "direction": "client",
+      "type": "chat::message",
+      "payload": {
+        "content": "Please summarize this document.",
+        "role": "user",
+        "meta": {
+          "attachments": ["att_xyz789"]
+        }
+      },
+      "note": "session_id: sess_abc123 — attachment_id embedded at payload.meta.attachments after system::opened"
+    },
+    {
+      "direction": "server",
+      "type": "chat::answer",
+      "payload": {
+        "content": "The document covers three main topics: introduction, methodology, and conclusions.",
+        "role": "assistant",
+        "answer_kind": "final",
+        "turn_id": "turn_006"
+      },
+      "note": "session_id: sess_abc123, seq: 2"
+    }
+  ]
+}

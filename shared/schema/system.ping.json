@@ -1,0 +1,19 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://cortex.local/sdk/schema/system.ping.json",
+  "title": "system::ping Payload",
+  "description": "Heartbeat ping sent by the SDK on pingInterval. The server must respond with system::pong echoing heartbeat_id.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["heartbeat_id", "channel_id"],
+  "properties": {
+    "heartbeat_id": {
+      "type": "string",
+      "description": "Client-generated opaque identifier for this heartbeat cycle"
+    },
+    "channel_id": {
+      "type": "string",
+      "description": "SDK channel identity"
+    }
+  }
+}

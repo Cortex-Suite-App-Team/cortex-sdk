@@ -1,0 +1,26 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://cortex.local/sdk/schema/system.trigger.json",
+  "title": "system::trigger Payload",
+  "description": "Sandbox-safe browser system trigger. SessionManager converts it to the internal runtime trigger shape.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["content"],
+  "properties": {
+    "content": {
+      "description": "Sandbox system input payload"
+    },
+    "meta": {
+      "type": "object",
+      "additionalProperties": true,
+      "properties": {
+        "attachments": {
+          "type": "array",
+          "items": {},
+          "description": "Optional attachment reference objects or IDs from uploadAttachment()."
+        }
+      },
+      "description": "Optional system trigger metadata"
+    }
+  }
+}

@@ -1,0 +1,23 @@
+{
+  "errors": [
+    { "code": "auth_invalid",                 "class": "auth",      "retryable": false, "fatal": true  },
+    { "code": "auth_expired",                 "class": "auth",      "retryable": true,  "fatal": false },
+    { "code": "auth_refresh_failed",          "class": "auth",      "retryable": false, "fatal": true  },
+    { "code": "transport_connect_timeout",    "class": "transport", "retryable": true,  "fatal": false },
+    { "code": "transport_send_timeout",       "class": "transport", "retryable": true,  "fatal": false },
+    { "code": "transport_protocol_violation", "class": "transport", "retryable": false, "fatal": true  },
+    { "code": "unknown_session",             "class": "session",   "retryable": false, "fatal": true  },
+    { "code": "session_terminal",             "class": "session",   "retryable": false, "fatal": true  },
+    { "code": "resync_timeout",               "class": "resync",    "retryable": true,  "fatal": false },
+    { "code": "replay_unavailable",           "class": "resync",    "retryable": true,  "fatal": false },
+    { "code": "upload_failed",                "class": "upload",    "retryable": true,  "fatal": false },
+    { "code": "upload_too_large",             "class": "upload",    "retryable": false, "fatal": false },
+    { "code": "upload_type_rejected",         "class": "upload",    "retryable": false, "fatal": false },
+    { "code": "session_not_ready",            "class": "file",      "retryable": true,  "fatal": false },
+    { "code": "file_api_unavailable",         "class": "file",      "retryable": false, "fatal": false },
+    { "code": "file_not_found",               "class": "file",      "retryable": false, "fatal": false },
+    { "code": "file_access_denied",           "class": "file",      "retryable": false, "fatal": false },
+    { "code": "file_expired",                 "class": "file",      "retryable": false, "fatal": false },
+    { "code": "file_operation_failed",        "class": "file",      "retryable": true,  "fatal": false }
+  ]
+}

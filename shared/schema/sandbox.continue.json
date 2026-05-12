@@ -1,0 +1,15 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://cortex.local/sdk/schema/sandbox.continue.json",
+  "title": "sandbox::continue Payload",
+  "description": "Continuation signal from client at a waiting point. wait_token identifies the specific waiting point the client is responding to.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["wait_token"],
+  "properties": {
+    "wait_token": {
+      "type": "string",
+      "description": "Canonical waiting-point identity from the sandbox::snapshot that triggered the wait"
+    }
+  }
+}

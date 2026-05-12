@@ -1,0 +1,87 @@
+{
+  "name": "auth_refresh",
+  "description": "Access token nears expiry. SDK proactively refreshes over HTTP before the buffer expires, then reconnects and continues.",
+  "steps": [
+    {
+      "direction": "client",
+      "type": "system::init",
+      "meta": {
+        "client_msg_id": "cli_init_004"
+      },
+      "payload": {
+        "execution_mode": "production",
+        "bundle_url": "/api/runtime/releases/42/bundle/",
+        "checksum": "sha256:release_42"
+      },
+      "note": "Initial session established with access_token_v1; payload copied from runtime_bootstrap returned by /auth/token; session_id omitted on outbound system::init; SDK generates meta.client_msg_id"
+    },
+    {
+      "direction": "server",
+      "type": "system::opened",
+      "payload": {
+        "status": "initializing",
+        "client_msg_id": "cli_init_004",
+        "execution_mode": "production"
+      },
+      "note": "session_id: sess_abc123, seq: 1 — canonical bootstrap ack from SessionManager"
+    },
+    {
+      "direction": "client",
+      "type": "chat::message",
+      "payload": {
+        "content": "First message before refresh",
+        "role": "user"
+      },
+      "note": "session_id: sess_abc123 — sent while token is still valid"
+    },
+    {
+      "direction": "server",
+      "type": "chat::answer",
+      "payload": {
+        "content": "Response to first message",
+        "role": "assistant",
+        "answer_kind": "final",
+        "turn_id": "turn_004"
+      },
+      "note": "session_id: sess_abc123, seq: 2"
+    },
+    {
+      "note": "--- OUT OF BAND: token expiry approaches (expires_at - now < 60s buffer) ---"
+    },
+    {
+      "note": "--- OUT OF BAND: SDK sends HTTP POST https://auth.cortexsuite.app/auth/refresh with Authorization: Bearer <refresh_token> ---"
+    },
+    {
+      "note": "--- OUT OF BAND: server responds { \"access_token\": \"access_token_v2\" } ---"
+    },
+    {
+      "note": "--- OUT OF BAND: SDK closes current WebSocket and reopens with cortex-sdk.jwt.access_token_v2 subprotocol ---"
+    },
+    {
+      "direction": "client",
+      "type": "system::resync",
+      "payload": { "last_seq": 1 },
+      "note": "session_id: sess_abc123 — resync after reconnect with new token; last_seq=2 (bootstrap ack and first answer were already received); same session_id preserved"
+    },
+    {
+      "direction": "client",
+      "type": "chat::message",
+      "payload": {
+        "content": "Second message after refresh",
+        "role": "user"
+      },
+      "note": "session_id: sess_abc123 — sent with refreshed token"
+    },
+    {
+      "direction": "server",
+      "type": "chat::answer",
+      "payload": {
+        "content": "Response to second message",
+        "role": "assistant",
+        "answer_kind": "final",
+        "turn_id": "turn_005"
+      },
+      "note": "session_id: sess_abc123, seq: 3 — session uninterrupted across token refresh"
+    }
+  ]
+}

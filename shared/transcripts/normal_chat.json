@@ -1,0 +1,49 @@
+{
+  "name": "normal_chat",
+  "description": "Minimal happy-path: session init, single user message, final answer.",
+  "steps": [
+    {
+      "direction": "client",
+      "type": "system::init",
+      "meta": {
+        "client_msg_id": "cli_init_001"
+      },
+      "payload": {
+        "execution_mode": "production",
+        "bundle_url": "/api/runtime/releases/42/bundle/",
+        "checksum": "sha256:release_42"
+      },
+      "note": "payload copied from runtime_bootstrap returned by /auth/token; session_id omitted on outbound system::init; SDK generates meta.client_msg_id"
+    },
+    {
+      "direction": "server",
+      "type": "system::opened",
+      "payload": {
+        "status": "initializing",
+        "client_msg_id": "cli_init_001",
+        "execution_mode": "production"
+      },
+      "note": "session_id: sess_abc123, seq: 1 — canonical bootstrap ack from SessionManager"
+    },
+    {
+      "direction": "client",
+      "type": "chat::message",
+      "payload": {
+        "content": "Hello runtime",
+        "role": "user"
+      },
+      "note": "session_id: sess_abc123 — SDK uses session_id learned from system::opened"
+    },
+    {
+      "direction": "server",
+      "type": "chat::answer",
+      "payload": {
+        "content": "Hello back",
+        "role": "assistant",
+        "answer_kind": "final",
+        "turn_id": "turn_001"
+      },
+      "note": "session_id: sess_abc123, seq: 2"
+    }
+  ]
+}

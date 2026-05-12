@@ -1,0 +1,54 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://cortex.local/sdk/schema/envelope.json",
+  "title": "Cortex SDK Transport Envelope",
+  "description": "Base container for all SDK messages. session_id is optional here because system::init outbound omits it.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["type", "schema", "payload", "ts"],
+  "properties": {
+    "type": {
+      "type": "string",
+      "enum": [
+        "system::init",
+        "system::opened",
+        "system::resync",
+        "system::trigger",
+        "system::ping",
+        "system::pong",
+        "system::error",
+        "system::warning",
+        "chat::message",
+        "chat::answer",
+        "chat::partial",
+        "sandbox::stop",
+        "sandbox::continue",
+        "sandbox::snapshot",
+        "sandbox::lifecycle",
+        "escalation::request",
+        "escalation::reply"
+      ]
+    },
+    "schema": {
+      "type": "string",
+      "const": "1.0"
+    },
+    "session_id": {
+      "type": "string"
+    },
+    "seq": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "payload": {
+      "type": "object"
+    },
+    "meta": {
+      "type": "object"
+    },
+    "ts": {
+      "type": "string",
+      "format": "date-time"
+    }
+  }
+}

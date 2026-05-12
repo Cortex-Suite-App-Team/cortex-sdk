@@ -1,0 +1,47 @@
+{
+  "name": "liveness",
+  "description": "SDK heartbeat cycle: ping sent on interval, pong received from server, channel stays OPEN. Two complete cycles shown.",
+  "steps": [
+    {
+      "direction": "client",
+      "type": "system::ping",
+      "payload": {
+        "heartbeat_id": "hb_001",
+        "channel_id": "chan_abc"
+      },
+      "note": "session_id: sess_abc123 — SDK sends ping automatically on pingInterval (15s default)"
+    },
+    {
+      "direction": "server",
+      "type": "system::pong",
+      "payload": {
+        "heartbeat_id": "hb_001",
+        "channel_id": "chan_abc",
+        "server_ts": "2026-04-03T12:00:01Z"
+      },
+      "note": "session_id: sess_abc123, seq: 42 — heartbeat_id echoed back; channel remains OPEN; pong timeout reset"
+    },
+    {
+      "note": "--- 15 seconds elapse (pingInterval) ---"
+    },
+    {
+      "direction": "client",
+      "type": "system::ping",
+      "payload": {
+        "heartbeat_id": "hb_002",
+        "channel_id": "chan_abc"
+      },
+      "note": "Second ping — heartbeat_id is fresh each cycle"
+    },
+    {
+      "direction": "server",
+      "type": "system::pong",
+      "payload": {
+        "heartbeat_id": "hb_002",
+        "channel_id": "chan_abc",
+        "server_ts": "2026-04-03T12:00:16Z"
+      },
+      "note": "session_id: sess_abc123, seq: 43 — second successful pong; staleThreshold clock reset"
+    }
+  ]
+}

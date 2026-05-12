@@ -1,0 +1,23 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://cortex.local/sdk/schema/system.error.json",
+  "title": "system::error Payload",
+  "description": "Runtime-originated error delivered over WebSocket. The fatal flag is NOT in the wire payload — bindings derive it by looking up code in errors.json.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["code", "message"],
+  "properties": {
+    "code": {
+      "type": "string",
+      "description": "Canonical error code from errors.json"
+    },
+    "message": {
+      "type": "string",
+      "description": "Human-readable explanation"
+    },
+    "node_key": {
+      "type": "string",
+      "description": "Optional execution/source correlation key"
+    }
+  }
+}

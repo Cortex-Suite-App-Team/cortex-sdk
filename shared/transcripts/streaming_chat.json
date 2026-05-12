@@ -1,0 +1,69 @@
+{
+  "name": "streaming_chat",
+  "description": "Streaming flow: server emits partial chunks before the final answer.",
+  "steps": [
+    {
+      "direction": "client",
+      "type": "system::init",
+      "meta": {
+        "client_msg_id": "cli_init_002"
+      },
+      "payload": {
+        "execution_mode": "production",
+        "bundle_url": "/api/runtime/releases/42/bundle/",
+        "checksum": "sha256:release_42"
+      },
+      "note": "payload copied from runtime_bootstrap returned by /auth/token; session_id omitted on outbound system::init; SDK generates meta.client_msg_id"
+    },
+    {
+      "direction": "server",
+      "type": "system::opened",
+      "payload": {
+        "status": "initializing",
+        "client_msg_id": "cli_init_002",
+        "execution_mode": "production"
+      },
+      "note": "session_id: sess_abc123, seq: 1 — canonical bootstrap ack from SessionManager"
+    },
+    {
+      "direction": "client",
+      "type": "chat::message",
+      "payload": {
+        "content": "Explain quantum entanglement briefly.",
+        "role": "user"
+      },
+      "note": "session_id: sess_abc123 — SDK uses session_id learned from system::opened"
+    },
+    {
+      "direction": "server",
+      "type": "chat::partial",
+      "payload": {
+        "content": "Quantum entanglement is ",
+        "role": "assistant",
+        "turn_id": "turn_002"
+      },
+      "note": "session_id: sess_abc123, seq: 2 — first streaming chunk"
+    },
+    {
+      "direction": "server",
+      "type": "chat::partial",
+      "payload": {
+        "content": "a phenomenon where two particles ",
+        "role": "assistant",
+        "turn_id": "turn_002"
+      },
+      "note": "session_id: sess_abc123, seq: 3 — second streaming chunk"
+    },
+    {
+      "direction": "server",
+      "type": "chat::answer",
+      "payload": {
+        "content": "Quantum entanglement is a phenomenon where two particles remain correlated regardless of distance.",
+        "role": "assistant",
+        "answer_kind": "final",
+        "turn_id": "turn_002"
+      },
+      "note": "session_id: sess_abc123, seq: 4 — final answer terminates the stream; turn_id matches partials"
+    }
+  ]
+}
