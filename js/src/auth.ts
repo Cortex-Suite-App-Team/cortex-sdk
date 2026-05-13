@@ -34,13 +34,18 @@ export async function exchangeApiKey(
   apiKey: string,
   fetchFn: FetchFn,
   authBaseUrl = DEFAULT_AUTH_URL,
+  workerRef?: string,
 ): Promise<AuthTokenResponse> {
-  const res = await fetchFn(buildAuthEndpoint(authBaseUrl, AUTH_TOKEN_PATH), {
+  const requestInit = {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
       Authorization: `ApiKey ${apiKey}`,
     },
+    ...(workerRef ? { body: JSON.stringify({ worker_ref: workerRef }) } : {}),
+  };
+  const res = await fetchFn(buildAuthEndpoint(authBaseUrl, AUTH_TOKEN_PATH), {
+    ...requestInit,
   });
 
   if (!res.ok) {

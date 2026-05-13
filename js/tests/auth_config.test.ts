@@ -56,9 +56,11 @@ describe('auth configuration', () => {
   it('uses the default auth URL when authUrl is not provided', async () => {
     const urls: string[] = [];
     const headers: Array<Record<string, string> | undefined> = [];
+    const bodies: Array<string | FormData | Uint8Array | undefined> = [];
     const fetchFn: FetchFn = async (url, init) => {
       urls.push(url);
       headers.push(init.headers);
+      bodies.push(init.body);
       return makeResponse({
         ws_url: 'ws://runtime.test/ws',
         access_token: makeJwt(3600),
@@ -85,6 +87,7 @@ describe('auth configuration', () => {
       await client.connect();
       expect(urls).toEqual([`${DEFAULT_AUTH_URL}${AUTH_TOKEN_PATH}`]);
       expect(headers[0]?.Authorization).toBe('ApiKey test-key');
+      expect(bodies[0]).toBeUndefined();
     } finally {
       await client.disconnect();
     }
@@ -129,9 +132,11 @@ describe('auth configuration', () => {
   it('uses the configured authUrl for token exchange and refresh', async () => {
     const urls: string[] = [];
     const headers: Array<Record<string, string> | undefined> = [];
+    const bodies: Array<string | FormData | Uint8Array | undefined> = [];
     const fetchFn: FetchFn = async (url, init) => {
       urls.push(url);
       headers.push(init.headers);
+      bodies.push(init.body);
 
       if (url.endsWith(AUTH_TOKEN_PATH)) {
         return makeResponse({
@@ -170,6 +175,42 @@ describe('auth configuration', () => {
       ]);
       expect(headers[0]?.Authorization).toBe('ApiKey test-key');
       expect(headers[1]?.Authorization).toBe('Bearer refresh_token_v1');
+      expect(bodies[0]).toBeUndefined();
+    } finally {
+      await client.disconnect();
+    }
+  });
+
+  it('sends worker_ref in the auth exchange body when configured', async () => {
+    const bodies: Array<string | FormData | Uint8Array | undefined> = [];
+    const fetchFn: FetchFn = async (_url, init) => {
+      bodies.push(init.body);
+      return makeResponse({
+        ws_url: 'ws://runtime.test/ws',
+        access_token: makeJwt(3600),
+        refresh_token: 'refresh_token_v1',
+        runtime_bootstrap: {
+          execution_mode: 'production',
+          bundle_url: '/bundle',
+          checksum: 'sha256:test',
+        },
+      });
+    };
+
+    const client = new CortexClient(
+      {
+        apiKey: 'test-key',
+        workerRef: 'live-worker',
+        onMessage: () => {},
+        pingInterval: 60000,
+        staleThreshold: 60000,
+      },
+      makePlatform(fetchFn),
+    );
+
+    try {
+      await client.connect();
+      expect(bodies[0]).toBe(JSON.stringify({ worker_ref: 'live-worker' }));
     } finally {
       await client.disconnect();
     }

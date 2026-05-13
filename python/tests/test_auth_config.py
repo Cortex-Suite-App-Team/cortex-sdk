@@ -32,7 +32,7 @@ class _FakeResponse:
 class _CapturingAsyncClient:
     def __init__(
         self,
-        requests: list[tuple[str, dict[str, str]]],
+        requests: list[tuple[str, dict[str, str], dict[str, object] | None]],
         responder: Callable[[str], _FakeResponse],
     ) -> None:
         self._requests = requests
@@ -44,8 +44,13 @@ class _CapturingAsyncClient:
     async def __aexit__(self, exc_type, exc, tb) -> None:
         return None
 
-    async def post(self, url: str, headers: dict[str, str]) -> _FakeResponse:
-        self._requests.append((url, headers))
+    async def post(
+        self,
+        url: str,
+        headers: dict[str, str],
+        json: dict[str, object] | None = None,
+    ) -> _FakeResponse:
+        self._requests.append((url, headers, json))
         return self._responder(url)
 
 
@@ -63,7 +68,7 @@ def _make_jwt(exp_seconds_from_now: int) -> str:
 async def test_exchange_api_key_uses_default_auth_url(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    requests: list[tuple[str, dict[str, str]]] = []
+    requests: list[tuple[str, dict[str, str], dict[str, object] | None]] = []
     monkeypatch.setattr(
         auth_module.httpx,
         "AsyncClient",
@@ -91,6 +96,7 @@ async def test_exchange_api_key_uses_default_auth_url(
                 "Content-Type": "application/json",
                 "Authorization": "ApiKey test-key",
             },
+            None,
         )
     ]
 
@@ -99,7 +105,7 @@ async def test_exchange_api_key_uses_default_auth_url(
 async def test_exchange_and_refresh_use_custom_auth_base(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    requests: list[tuple[str, dict[str, str]]] = []
+    requests: list[tuple[str, dict[str, str], dict[str, object] | None]] = []
     monkeypatch.setattr(
         auth_module.httpx,
         "AsyncClient",
@@ -137,6 +143,7 @@ async def test_exchange_and_refresh_use_custom_auth_base(
                 "Content-Type": "application/json",
                 "Authorization": "ApiKey test-key",
             },
+            None,
         ),
         (
             "https://auth.example.test/auth/refresh",
@@ -144,8 +151,37 @@ async def test_exchange_and_refresh_use_custom_auth_base(
                 "Content-Type": "application/json",
                 "Authorization": "Bearer refresh_token_v1",
             },
+            None,
         ),
     ]
+
+
+@pytest.mark.asyncio
+async def test_exchange_api_key_sends_worker_ref_when_configured(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    requests: list[tuple[str, dict[str, str], dict[str, object] | None]] = []
+    monkeypatch.setattr(
+        auth_module.httpx,
+        "AsyncClient",
+        lambda: _CapturingAsyncClient(
+            requests,
+            lambda _url: _FakeResponse({
+                "ws_url": "ws://runtime.test/ws",
+                "access_token": _make_jwt(3600),
+                "refresh_token": "refresh_token_v1",
+                "runtime_bootstrap": {
+                    "execution_mode": "production",
+                    "bundle_url": "/bundle",
+                    "checksum": "sha256:test",
+                },
+            }),
+        ),
+    )
+
+    await auth_module.exchange_api_key("test-key", worker_ref="live-worker")
+
+    assert requests[0][2] == {"worker_ref": "live-worker"}
 
 
 @pytest.mark.asyncio

@@ -59,6 +59,7 @@ class CortexClient:
         self,
         api_key: str,
         on_message: MessageCallback,
+        worker_ref: str | None = None,
         auth_url: str | None = None,
         connect_timeout: float = DEFAULT_CONNECT_TIMEOUT,
         send_timeout: float = DEFAULT_SEND_TIMEOUT,
@@ -70,6 +71,7 @@ class CortexClient:
         _upload_url: str | None = None,
     ) -> None:
         self._api_key = api_key
+        self._worker_ref = worker_ref
         self._on_message_cb = on_message
         self._auth_url = normalize_auth_base_url(auth_url or DEFAULT_AUTH_URL)
         self._connect_timeout = connect_timeout
@@ -128,7 +130,11 @@ class CortexClient:
         self._disconnect_requested = False
         self._reconnect_attempt = 0
 
-        auth = await exchange_api_key(self._api_key, auth_base_url=self._auth_url)
+        auth = await exchange_api_key(
+            self._api_key,
+            auth_base_url=self._auth_url,
+            worker_ref=self._worker_ref,
+        )
         self._access_token = auth["access_token"]
         self._refresh_token = auth["refresh_token"]
         self._ws_url = auth["ws_url"]

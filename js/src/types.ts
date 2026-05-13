@@ -1,5 +1,6 @@
 export interface CortexClientOptions {
   apiKey: string;
+  workerRef?: string;
   /**
    * Base URL of the Cortex auth service — origin only, no path component.
    * The SDK appends `/auth/token` and `/auth/refresh` automatically.

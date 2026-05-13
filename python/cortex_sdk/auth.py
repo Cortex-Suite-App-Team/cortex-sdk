@@ -48,15 +48,21 @@ async def exchange_api_key(
     api_key: str,
     *,
     auth_base_url: str = DEFAULT_AUTH_URL,
+    worker_ref: str | None = None,
 ) -> AuthTokenResponse:
     """Exchange an API key for tokens and WS URL."""
+    request_kwargs: dict[str, object] = {
+        "headers": {
+            "Content-Type": "application/json",
+            "Authorization": f"ApiKey {api_key}",
+        },
+    }
+    if worker_ref:
+        request_kwargs["json"] = {"worker_ref": worker_ref}
     async with httpx.AsyncClient() as client:
         resp = await client.post(
             _build_auth_endpoint(auth_base_url, AUTH_TOKEN_PATH),
-            headers={
-                "Content-Type": "application/json",
-                "Authorization": f"ApiKey {api_key}",
-            },
+            **request_kwargs,
         )
 
     if not resp.is_success:

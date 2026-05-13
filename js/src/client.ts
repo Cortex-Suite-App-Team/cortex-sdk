@@ -45,7 +45,9 @@ export interface CortexClientPlatform {
 }
 
 export class CortexClient {
-  private readonly _options: Required<Omit<CortexClientOptions, 'apiKey' | 'onMessage'>> & Pick<CortexClientOptions, 'apiKey' | 'onMessage'>;
+  private readonly _options:
+    Required<Omit<CortexClientOptions, 'apiKey' | 'onMessage' | 'workerRef'>>
+    & Pick<CortexClientOptions, 'apiKey' | 'onMessage' | 'workerRef'>;
   private readonly _platform: CortexClientPlatform;
   private readonly _messageHandlers = new Set<(message: CortexMessage) => void>();
 
@@ -132,6 +134,7 @@ export class CortexClient {
       this._options.apiKey,
       this._platform.fetchFn,
       this._options.authUrl,
+      this._options.workerRef,
     );
     this._accessToken = authResponse.access_token;
     this._refreshToken = authResponse.refresh_token;
