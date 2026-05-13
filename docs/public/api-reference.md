@@ -26,7 +26,7 @@ client = CortexClient(**options)
 |---|---|---|---|---|---|
 | `apiKey` | `api_key` | string | **yes** | — | Cortex API key |
 | `onMessage` | `on_message` | function | **yes** | — | Callback for all incoming messages |
-| `authUrl` | `auth_url` | string | no | `https://auth.cortexsuite.app` | Auth service base URL (no trailing path) |
+| `authUrl` | `auth_url` | string | no | `https://cortexsuite.app` | Auth service base URL (no trailing path) |
 | `connectTimeout` | `connect_timeout` | integer | no | `10000` / `10` | `connect()` timeout in ms (JS) or s (Python) |
 | `sendTimeout` | `send_timeout` | integer | no | `10000` / `10` | `sendMessage()` timeout in ms (JS) or s (Python) |
 | `resyncTimeout` | `resync_timeout` | integer | no | `15000` / `15` | Resync timeout in ms (JS) or s (Python) |
@@ -288,3 +288,4 @@ try:
 except CortexError as e:
     print(e.code, e.message, e.retryable, e.fatal)
 ```
+

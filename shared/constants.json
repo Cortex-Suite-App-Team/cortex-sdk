@@ -1,5 +1,5 @@
 {
-  "DEFAULT_AUTH_URL": "https://auth.cortexsuite.app",
+  "DEFAULT_AUTH_URL": "https://cortexsuite.app",
   "AUTH_TOKEN_PATH": "/auth/token",
   "AUTH_REFRESH_PATH": "/auth/refresh",
   "WS_SUBPROTOCOL": "cortex-sdk.v1",
@@ -14,3 +14,4 @@
   "TOKEN_REFRESH_BUFFER_MS": 60000,
   "RECONNECT_BACKOFF_MS": [1000, 2000, 5000, 10000, 20000, 30000]
 }
+

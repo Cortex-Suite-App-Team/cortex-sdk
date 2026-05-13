@@ -49,7 +49,7 @@
       "note": "--- OUT OF BAND: token expiry approaches (expires_at - now < 60s buffer) ---"
     },
     {
-      "note": "--- OUT OF BAND: SDK sends HTTP POST https://auth.cortexsuite.app/auth/refresh with Authorization: Bearer <refresh_token> ---"
+      "note": "--- OUT OF BAND: SDK sends HTTP POST https://cortexsuite.app/auth/refresh with Authorization: Bearer <refresh_token> ---"
     },
     {
       "note": "--- OUT OF BAND: server responds { \"access_token\": \"access_token_v2\" } ---"
@@ -85,3 +85,4 @@
     }
   ]
 }
+

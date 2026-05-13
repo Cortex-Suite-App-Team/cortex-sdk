@@ -19,7 +19,7 @@ def on_message(msg):
 async def main():
     client = CortexClient(
         api_key="your-api-key",
-        # auth_url="https://auth.cortexsuite.app",  # optional override
+        # auth_url="https://cortexsuite.app",  # optional override
         on_message=on_message,
     )
     await client.connect()
@@ -58,3 +58,4 @@ except CortexError as err:
     if err.code in ("auth_invalid", "auth_refresh_failed"):
         pass  # prompt re-authentication
 ```
+

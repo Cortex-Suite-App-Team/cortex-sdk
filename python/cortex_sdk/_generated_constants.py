@@ -2,7 +2,7 @@ from __future__ import annotations
 
 # Generated from shared/constants.json. Do not edit manually.
 
-DEFAULT_AUTH_URL: str = 'https://auth.cortexsuite.app'
+DEFAULT_AUTH_URL: str = 'https://cortexsuite.app'
 AUTH_TOKEN_PATH: str = '/auth/token'
 AUTH_REFRESH_PATH: str = '/auth/refresh'
 WS_SUBPROTOCOL: str = 'cortex-sdk.v1'
@@ -24,3 +24,4 @@ RECONNECT_BACKOFF_MS: tuple[int, ...] = (1000, 2000, 5000, 10000, 20000, 30000,)
 CORTEX_AUTH_URL: str = DEFAULT_AUTH_URL + AUTH_TOKEN_PATH
 CORTEX_REFRESH_URL: str = DEFAULT_AUTH_URL + AUTH_REFRESH_PATH
 WS_SUBPROTOCOL_BASE: str = WS_SUBPROTOCOL
+

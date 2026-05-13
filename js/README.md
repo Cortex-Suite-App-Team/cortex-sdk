@@ -13,7 +13,7 @@ import { CortexClient } from "@cortex-suite/sdk";
 
 const client = new CortexClient({
   apiKey: "your-api-key",
-  // authUrl: "https://auth.cortexsuite.app", // optional override
+  // authUrl: "https://cortexsuite.app", // optional override
   onMessage: (msg) => console.log(msg.type, msg.payload),
 });
 
@@ -29,7 +29,7 @@ import { CortexClient } from "@cortex-suite/sdk";
 async function main() {
   const client = new CortexClient({
     apiKey: "your-api-key",
-    // authUrl: "https://auth.cortexsuite.app", // optional override
+    // authUrl: "https://cortexsuite.app", // optional override
     onMessage: (msg) => console.log(msg.type, msg.payload),
   });
 
@@ -70,3 +70,4 @@ try {
   }
 }
 ```
+

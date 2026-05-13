@@ -38,11 +38,11 @@ A callback function that receives every message from the runtime. Required. See 
 
 The base URL of the Cortex auth service. Optional.
 
-**Default:** `https://auth.cortexsuite.app`
+**Default:** `https://cortexsuite.app`
 
 You only need to set this if you are working against a non-production environment or a private deployment. Provide the base URL only — do not append a path.
 
-> **Common mistake:** Do not pass a full endpoint such as `https://auth.cortexsuite.app/auth/token`.
+> **Common mistake:** Do not pass a full endpoint such as `https://cortexsuite.app/auth/token`.
 > The SDK appends `/auth/token` itself. Passing the full endpoint URL will cause the SDK
 > to emit a warning and strip the path automatically, but you should configure the base URL.
 
@@ -94,7 +94,7 @@ import { CortexClient } from "@cortex-suite/sdk";
 
 const client = new CortexClient({
   apiKey: "your-api-key",
-  authUrl: "https://auth.cortexsuite.app",  // default; omit if not overriding
+  authUrl: "https://cortexsuite.app",  // default; omit if not overriding
 
   onMessage: (msg) => {
     console.log(msg.type, msg.payload);
@@ -121,7 +121,7 @@ def on_message(msg):
 async def main():
     client = CortexClient(
         api_key="your-api-key",
-        auth_url="https://auth.cortexsuite.app",  # default; omit if not overriding
+        auth_url="https://cortexsuite.app",  # default; omit if not overriding
 
         on_message=on_message,
 
@@ -150,3 +150,4 @@ Leave the defaults in place unless you have a specific, measured reason to chang
 **Decrease `staleThreshold` and `pongTimeout`** if you need faster detection of dropped connections — but note this increases reconnect frequency on unstable networks.
 
 Do not set `pingInterval` below 5 seconds. The runtime may enforce a minimum server-side.
+

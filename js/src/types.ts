@@ -4,8 +4,8 @@ export interface CortexClientOptions {
   /**
    * Base URL of the Cortex auth service — origin only, no path component.
    * The SDK appends `/auth/token` and `/auth/refresh` automatically.
-   * @example "https://auth.cortexsuite.app"
-   * @default "https://auth.cortexsuite.app"
+   * @example "https://cortexsuite.app"
+   * @default "https://cortexsuite.app"
    */
   authUrl?: string;
   onMessage: (message: CortexMessage) => void;
@@ -181,3 +181,4 @@ export interface FormDataLike {
   append(name: string, value: Blob | string, filename?: string): void;
 }
 export type FormDataCtor = new () => FormDataLike;
+
