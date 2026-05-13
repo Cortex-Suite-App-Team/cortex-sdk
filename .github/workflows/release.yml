@@ -296,10 +296,20 @@ jobs:
           name: python-dist
           path: release-assets/python-dist
 
+      - name: Bundle JS release assets
+        shell: bash
+        env:
+          TAG_NAME: ${{ github.ref_name }}
+        run: |
+          set -euo pipefail
+          mkdir -p release-assets/bundles
+          cd release-assets/js-dist
+          zip -r "../bundles/cortex-sdk-js-dist-${TAG_NAME}.zip" .
+
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
         with:
           generate_release_notes: true
           files: |
-            release-assets/js-dist/**
+            release-assets/bundles/cortex-sdk-js-dist-${{ github.ref_name }}.zip
             release-assets/python-dist/**
