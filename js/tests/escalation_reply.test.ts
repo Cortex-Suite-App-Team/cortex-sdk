@@ -176,10 +176,11 @@ describe('escalation reply transport', () => {
     const server = await startMockServer({
       autoInitEcho: false,
     });
-    const client = makeTestClient(server);
+    const client = makeTestClient(server, { sessionOpenTimeout: 100 });
 
     try {
-      await client.connect();
+      const connectPromise = client.connect();
+      await waitFor(() => server.received.some((message) => message['type'] === 'system::init'));
 
       await expect(client.replyEscalation({
         escalationId: 'esc_1',
@@ -187,6 +188,10 @@ describe('escalation reply transport', () => {
         action: 'continue',
       })).rejects.toMatchObject({
         code: 'session_not_ready',
+      });
+
+      await expect(connectPromise).rejects.toMatchObject({
+        code: 'session_open_timeout',
       });
     } finally {
       await client.disconnect();
