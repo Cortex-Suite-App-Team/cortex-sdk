@@ -70,6 +70,12 @@ describe('normal_chat', () => {
       expect(chatMsg).toBeDefined();
       expect((chatMsg!['payload'] as Record<string, unknown>)['content']).toBe('Hello runtime');
       expect((chatMsg!['payload'] as Record<string, unknown>)['role']).toBe('user');
+
+      const rawChatFrame = server.receivedFrames
+        .map((frame) => JSON.parse(frame) as Record<string, unknown>)
+        .find((frame) => frame['type'] === 'chat::message');
+      expect(rawChatFrame).toBeDefined();
+      expect(rawChatFrame?.['type']).toBe('chat::message');
     } finally {
       await client.disconnect();
       await server.close();

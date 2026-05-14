@@ -176,7 +176,13 @@ export class CortexClient {
   }
 
   async sendMessage(options: { content: unknown; attachments?: unknown[]; meta?: Record<string, unknown> }): Promise<void> {
+    console.debug('[sdk] CortexClient.sendMessage start', {
+      content: options.content,
+      attachments: options.attachments,
+      meta: options.meta,
+    });
     await this._session.sendChatMessage(options.content, options.attachments, options.meta);
+    console.debug('[sdk] CortexClient.sendMessage done');
   }
 
   async replyEscalation(options: ReplyEscalationOptions): Promise<void> {

@@ -50,6 +50,7 @@ export interface MockServer {
   readonly uploadCallCount: number;
   readonly receivedMessageCount: number;
   received: Array<Record<string, unknown>>;
+  receivedFrames: string[];
   clients: Set<WebSocket>;
   dropConnections(): void;
   broadcast(msg: Record<string, unknown>): void;
@@ -127,6 +128,7 @@ export function startMockServer(options: MockServerOptions = {}): Promise<MockSe
 
   return new Promise((resolve) => {
     const received: Array<Record<string, unknown>> = [];
+    const receivedFrames: string[] = [];
     const clients = new Set<WebSocket>();
     const schemaViolations: SchemaViolation[] = [];
     const injections: InjectedError[] = [];
@@ -337,6 +339,7 @@ export function startMockServer(options: MockServerOptions = {}): Promise<MockSe
       ws.on('close', () => clients.delete(ws));
 
       ws.on('message', (data: Buffer) => {
+        receivedFrames.push(data.toString());
         let parsed: Record<string, unknown>;
         try {
           parsed = JSON.parse(data.toString()) as Record<string, unknown>;
@@ -447,6 +450,7 @@ export function startMockServer(options: MockServerOptions = {}): Promise<MockSe
         return received.length;
       },
       received,
+      receivedFrames,
       clients,
 
       dropConnections() {

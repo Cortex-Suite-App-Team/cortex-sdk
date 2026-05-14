@@ -152,7 +152,23 @@ export function createTransport(
         }, timeoutMs);
 
         try {
+          const envelopeType = (
+            typeof message === 'object'
+            && message !== null
+            && 'type' in message
+            && typeof (message as { type?: unknown }).type === 'string'
+          )
+            ? (message as { type: string }).type
+            : 'unknown';
+          console.debug('[sdk] transport.send start', {
+            envelopeType,
+            readyState: ws.readyState,
+          });
           ws.send(JSON.stringify(message));
+          console.debug('[sdk] transport.send done', {
+            envelopeType,
+            readyState: ws.readyState,
+          });
           clearTimeout(timer);
           resolve();
         } catch (err) {
