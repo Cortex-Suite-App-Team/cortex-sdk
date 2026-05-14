@@ -37,10 +37,9 @@ async def test_session_moves_to_active_when_runtime_assigns_session_id() -> None
     await session.send_init(BOOTSTRAP)
     assert session.session_state == "INITIALIZING"
 
-    session.handle_incoming(make_server_message("chat::answer", {
+    session.handle_incoming(make_server_message("chat::echo", {
         "content": "init ack",
-        "answer_kind": "echo",
-        "role": "assistant",
+        "role": "user",
     }))
 
     assert session.session_id == "sess_123"

@@ -599,10 +599,9 @@ async def start_mock_server(
                         continue
 
                 if msg_type == "system::init" and options.auto_init_echo:
-                    await srv.send_to(ws, _make_envelope("chat::answer", {
+                    await srv.send_to(ws, _make_envelope("chat::echo", {
                         "content": "",
-                        "role": "assistant",
-                        "answer_kind": "echo",
+                        "role": "user",
                         "turn_id": "turn_init",
                     }))
 
