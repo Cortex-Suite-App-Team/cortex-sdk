@@ -32,10 +32,14 @@ describe('error_coverage', () => {
     const client = makeClient(server, (message) => received.push(message));
 
     try {
-      await client.connect();
-      await waitFor(() => client.channelState === 'AUTH_FAILED', 3000);
+      await expect(client.connect()).rejects.toMatchObject({
+        code: 'auth_invalid',
+        retryable: false,
+        fatal: true,
+      });
+      await waitFor(() => client.channelState === 'CLOSED', 3000);
       await delay(200);
-      expect(client.channelState).toBe('AUTH_FAILED');
+      expect(client.channelState).toBe('CLOSED');
       expect(server.wsConnectionCount).toBe(1);
       expect(receivedCodes(received)).toEqual([]);
     } finally {
