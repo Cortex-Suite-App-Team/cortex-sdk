@@ -44,6 +44,24 @@ export interface CortexClientPlatform {
   uploadUrl: string;
 }
 
+function summarizeSendPayload(payload: {
+  content?: unknown;
+  attachments?: unknown[];
+  meta?: Record<string, unknown>;
+}) {
+  return {
+    contentKind: Array.isArray(payload.content) ? 'array' : typeof payload.content,
+    contentLength: Array.isArray(payload.content) ? payload.content.length : undefined,
+    hasAttachments: Boolean(payload.attachments?.length),
+    attachmentCount: payload.attachments?.length ?? 0,
+    metaKeys: payload.meta ? Object.keys(payload.meta) : [],
+    clientMsgId:
+      payload.meta && typeof payload.meta.client_msg_id === 'string'
+        ? payload.meta.client_msg_id
+        : undefined,
+  };
+}
+
 export class CortexClient {
   private readonly _options:
     Required<Omit<CortexClientOptions, 'apiKey' | 'onMessage' | 'workerRef'>>
@@ -176,11 +194,7 @@ export class CortexClient {
   }
 
   async sendMessage(options: { content: unknown; attachments?: unknown[]; meta?: Record<string, unknown> }): Promise<void> {
-    console.debug('[sdk] CortexClient.sendMessage start', {
-      content: options.content,
-      attachments: options.attachments,
-      meta: options.meta,
-    });
+    console.debug('[sdk] CortexClient.sendMessage start', summarizeSendPayload(options));
     await this._session.sendChatMessage(options.content, options.attachments, options.meta);
     console.debug('[sdk] CortexClient.sendMessage done');
   }
