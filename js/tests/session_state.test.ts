@@ -31,8 +31,16 @@ function makeServerMessage(type: string, payload: Record<string, unknown>): stri
   });
 }
 
+function openSession(session: ReturnType<typeof createSession>) {
+  session.handleIncoming(makeServerMessage('system::opened', {
+    status: 'initializing',
+    client_msg_id: 'cli_init_test',
+    execution_mode: 'production',
+  }));
+}
+
 describe('session state transitions', () => {
-  it('transitions from INITIALIZING to ACTIVE when the runtime assigns session_id', async () => {
+  it('transitions from INITIALIZING to ACTIVE on system::opened', async () => {
     const session = createSession({
       onMessage: jest.fn(),
       onFatalError: jest.fn(),
@@ -42,10 +50,10 @@ describe('session state transitions', () => {
     await session.sendInit(BOOTSTRAP);
     expect(session.sessionState).toBe('INITIALIZING');
 
-    session.handleIncoming(makeServerMessage('chat::answer', {
-      content: 'init ack',
-      answer_kind: 'echo',
-      role: 'assistant',
+    session.handleIncoming(makeServerMessage('system::opened', {
+      status: 'initializing',
+      client_msg_id: 'cli_init_test',
+      execution_mode: 'production',
     }));
 
     expect(session.sessionId).toBe('sess_123');
@@ -68,6 +76,7 @@ describe('session state transitions', () => {
     session.setTransport(makeTransport(), 1000);
 
     await session.sendInit(BOOTSTRAP);
+    openSession(session);
     session.handleIncoming(makeServerMessage(type, payload));
 
     expect(session.sessionState).toBe(expectedState);
@@ -82,6 +91,7 @@ describe('session state transitions', () => {
     session.setTransport(makeTransport(), 1000);
 
     await session.sendInit(BOOTSTRAP);
+    openSession(session);
     session.handleIncoming(makeServerMessage('system::error', {
       code: 'session_terminal',
       message: 'Session ended',

@@ -18,6 +18,7 @@ GENERATED_ERROR_CATALOG: tuple[GeneratedErrorEntry, ...] = (
     GeneratedErrorEntry('transport_send_timeout', retryable=True, fatal=False),
     GeneratedErrorEntry('transport_protocol_violation', retryable=False, fatal=True),
     GeneratedErrorEntry('unknown_session', retryable=False, fatal=True),
+    GeneratedErrorEntry('session_open_timeout', retryable=True, fatal=False),
     GeneratedErrorEntry('session_terminal', retryable=False, fatal=True),
     GeneratedErrorEntry('resync_timeout', retryable=True, fatal=False),
     GeneratedErrorEntry('replay_unavailable', retryable=True, fatal=False),

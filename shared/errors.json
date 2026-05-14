@@ -7,6 +7,7 @@
     { "code": "transport_send_timeout",       "class": "transport", "retryable": true,  "fatal": false },
     { "code": "transport_protocol_violation", "class": "transport", "retryable": false, "fatal": true  },
     { "code": "unknown_session",             "class": "session",   "retryable": false, "fatal": true  },
+    { "code": "session_open_timeout",        "class": "session",   "retryable": true,  "fatal": false },
     { "code": "session_terminal",             "class": "session",   "retryable": false, "fatal": true  },
     { "code": "resync_timeout",               "class": "resync",    "retryable": true,  "fatal": false },
     { "code": "replay_unavailable",           "class": "resync",    "retryable": true,  "fatal": false },

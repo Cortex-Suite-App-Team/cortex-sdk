@@ -13,6 +13,7 @@ export const GENERATED_ERROR_CATALOG: readonly GeneratedErrorEntry[] = [
   { code: 'transport_send_timeout', retryable: true, fatal: false },
   { code: 'transport_protocol_violation', retryable: false, fatal: true },
   { code: 'unknown_session', retryable: false, fatal: true },
+  { code: 'session_open_timeout', retryable: true, fatal: false },
   { code: 'session_terminal', retryable: false, fatal: true },
   { code: 'resync_timeout', retryable: true, fatal: false },
   { code: 'replay_unavailable', retryable: true, fatal: false },

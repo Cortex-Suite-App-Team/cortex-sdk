@@ -1,6 +1,7 @@
 import {
   DEFAULT_AUTH_URL,
   DEFAULT_CONNECT_TIMEOUT_MS,
+  DEFAULT_SESSION_OPEN_TIMEOUT_MS,
   DEFAULT_SEND_TIMEOUT_MS,
   DEFAULT_RESYNC_TIMEOUT_MS,
   DEFAULT_PING_INTERVAL_MS,
@@ -34,6 +35,7 @@ import type {
   FileRef,
   ListFilesOptions,
   PromoteFileOptions,
+  SessionContext,
   UploadFileOptions,
 } from './types.js';
 
@@ -76,9 +78,14 @@ export class CortexClient {
   private _runtimeHttpBaseUrl: string | null = null;
   private _cpApiUrl: string | null = null;
   private _sessionMeta: Record<string, unknown> | null = null;
+  private _sessionContext: SessionContext | null = null;
+  private _bootstrapMeta: Record<string, unknown> | null = null;
   private _channelId = `ch_${Math.random().toString(36).slice(2, 10)}`;
   private _reconnectAttempt = 0;
   private _disconnectRequested = false;
+  private _connectPromise: Promise<void> | null = null;
+  private _sessionOpenWaiter: Deferred<void> | null = null;
+  private _sessionOpenTimer: ReturnType<typeof setTimeout> | null = null;
 
   private readonly _transport;
   private readonly _session;
@@ -91,6 +98,7 @@ export class CortexClient {
     const authUrl = normalizeAuthBaseUrl(options.authUrl ?? DEFAULT_AUTH_URL);
     this._options = {
       connectTimeout: DEFAULT_CONNECT_TIMEOUT_MS,
+      sessionOpenTimeout: DEFAULT_SESSION_OPEN_TIMEOUT_MS,
       sendTimeout: DEFAULT_SEND_TIMEOUT_MS,
       resyncTimeout: DEFAULT_RESYNC_TIMEOUT_MS,
       pingInterval: DEFAULT_PING_INTERVAL_MS,
@@ -103,27 +111,8 @@ export class CortexClient {
 
     this._transport = createTransport(platform.WS, this._options.connectTimeout);
     this._session = createSession({
-      onMessage: (msg) => {
-        // Route pong to liveness
-        if (msg.type === 'system::pong' && typeof msg.payload['heartbeat_id'] === 'string') {
-          this._liveness?.handlePong(msg.payload['heartbeat_id'] as string);
-          return; // pong is internal — not forwarded to user
-        }
-        this._dispatchMessage(msg);
-      },
-      onFatalError: (err) => {
-        this._channelState = 'AUTH_FAILED';
-        this._stopBackgroundActivity();
-        // re-throw via disconnect so the user sees it
-        this._transport.close();
-        this._dispatchMessage({
-          type: 'system::error',
-          schema: '1.0',
-          session_id: this._session.sessionId ?? '',
-          payload: { code: (err as unknown as { code: string }).code, message: err.message },
-          ts: new Date().toISOString(),
-        });
-      },
+      onMessage: (msg) => this._handleSessionMessage(msg),
+      onFatalError: (err) => this._handleSessionFatalError(err),
     });
 
     this._transport.onMessage = (data) => this._session.handleIncoming(data);
@@ -135,6 +124,7 @@ export class CortexClient {
   get channelState(): ChannelState { return this._channelState; }
   get sessionId(): string | null { return this._session.sessionId; }
   get sessionMeta(): Record<string, unknown> | null { return this._sessionMeta; }
+  get sessionContext(): SessionContext | null { return this._sessionContext; }
 
   onMessage(handler: (message: CortexMessage) => void): () => void {
     this._messageHandlers.add(handler);
@@ -143,58 +133,36 @@ export class CortexClient {
     };
   }
 
-  async connect(): Promise<void> {
-    this._disconnectRequested = false;
-    this._reconnectAttempt = 0;
+  connect(): Promise<void> {
+    if (this._isSessionReady()) {
+      return Promise.resolve();
+    }
+    if (this._connectPromise) {
+      return this._connectPromise;
+    }
 
-    // Auth exchange
-    const authResponse = await exchangeApiKey(
-      this._options.apiKey,
-      this._platform.fetchFn,
-      this._options.authUrl,
-      this._options.workerRef,
-    );
-    this._accessToken = authResponse.access_token;
-    this._refreshToken = authResponse.refresh_token;
-    this._wsUrl = authResponse.ws_url;
-    this._runtimeHttpBaseUrl = deriveRuntimeHttpBaseUrl(authResponse.ws_url);
-    this._runtimeHttpBaseUrl = deriveRuntimeHttpBaseUrlFromHttpUrl(this._platform.uploadUrl) ?? this._runtimeHttpBaseUrl;
-    this._cpApiUrl = normalizeOptionalBaseUrl(authResponse.cp_api_url);
-    this._sessionMeta = asRecord(asRecord(authResponse.runtime_bootstrap?.trigger_payload)?.meta);
-
-    // Open channel + init session
-    await this._openChannel();
-
-    this._session.setTransport(this._transport, this._options.sendTimeout);
-    await this._session.sendInit(authResponse.runtime_bootstrap);
-
-    // Start liveness
-    this._liveness = createLiveness(
-      this._transport,
-      this._options.pingInterval,
-      this._options.pongTimeout,
-      this._options.staleThreshold,
-      {
-        onStale: () => this._handleStale(),
-        getSessionId: () => this._session.sessionId,
-        getChannelId: () => this._channelId,
-      },
-    );
-    this._liveness.start();
-
-    // Schedule proactive token refresh
-    this._scheduleTokenRefresh();
+    this._connectPromise = this._connectInternal()
+      .catch((error) => {
+        this._cleanupFailedConnect();
+        throw error;
+      })
+      .finally(() => {
+        this._connectPromise = null;
+      });
+    return this._connectPromise;
   }
 
   async disconnect(): Promise<void> {
     this._disconnectRequested = true;
     this._stopBackgroundActivity();
+    this._clearSessionOpenWaiter();
     this._channelState = 'CLOSED';
     this._transport.close();
   }
 
   async sendMessage(options: { content: unknown; attachments?: unknown[]; meta?: Record<string, unknown> }): Promise<void> {
     console.debug('[sdk] CortexClient.sendMessage start', summarizeSendPayload(options));
+    this._requireSessionId();
     await this._session.sendChatMessage(options.content, options.attachments, options.meta);
     console.debug('[sdk] CortexClient.sendMessage done');
   }
@@ -291,12 +259,108 @@ export class CortexClient {
     await this._session.sendStop();
   }
 
+  private async _connectInternal(): Promise<void> {
+    this._disconnectRequested = false;
+    this._reconnectAttempt = 0;
+    this._stopBackgroundActivity();
+    this._clearSessionOpenWaiter();
+    this._session.reset();
+    this._sessionContext = null;
+    this._sessionMeta = null;
+    this._bootstrapMeta = null;
+    this._channelState = 'CLOSED';
+
+    const authResponse = await exchangeApiKey(
+      this._options.apiKey,
+      this._platform.fetchFn,
+      this._options.authUrl,
+      this._options.workerRef,
+    );
+    this._accessToken = authResponse.access_token;
+    this._refreshToken = authResponse.refresh_token;
+    this._wsUrl = authResponse.ws_url;
+    this._runtimeHttpBaseUrl = deriveRuntimeHttpBaseUrl(authResponse.ws_url);
+    this._runtimeHttpBaseUrl = deriveRuntimeHttpBaseUrlFromHttpUrl(this._platform.uploadUrl) ?? this._runtimeHttpBaseUrl;
+    this._cpApiUrl = normalizeOptionalBaseUrl(authResponse.cp_api_url);
+    this._bootstrapMeta = asRecord(asRecord(authResponse.runtime_bootstrap?.trigger_payload)?.meta);
+    this._sessionMeta = this._bootstrapMeta;
+
+    await this._openChannel();
+
+    this._session.setTransport(this._transport, this._options.sendTimeout);
+    const openWaiter = this._createSessionOpenWaiter();
+    await this._session.sendInit(authResponse.runtime_bootstrap);
+    await openWaiter;
+
+    this._startLiveness();
+    this._scheduleTokenRefresh();
+  }
+
   private async _openChannel(): Promise<void> {
     if (!this._wsUrl || !this._accessToken) throw new Error('Auth not completed');
     this._channelState = 'CONNECTING';
     await this._transport.open(this._wsUrl, this._accessToken);
     this._channelState = 'OPEN';
     this._reconnectAttempt = 0;
+  }
+
+  private _startLiveness() {
+    this._liveness?.stop();
+    this._liveness = createLiveness(
+      this._transport,
+      this._options.pingInterval,
+      this._options.pongTimeout,
+      this._options.staleThreshold,
+      {
+        onStale: () => this._handleStale(),
+        getSessionId: () => this._session.sessionId,
+        getChannelId: () => this._channelId,
+      },
+    );
+    this._liveness.start();
+  }
+
+  private _createSessionOpenWaiter(): Promise<void> {
+    const waiter = createDeferred<void>();
+    this._sessionOpenWaiter = waiter;
+    this._clearSessionOpenTimer();
+    this._sessionOpenTimer = setTimeout(() => {
+      this._rejectSessionOpen(
+        makeError('session_open_timeout', 'Session did not open after system::init'),
+      );
+      this._transport.close(1000, 'session_open_timeout');
+    }, this._options.sessionOpenTimeout);
+    return waiter.promise;
+  }
+
+  private _clearSessionOpenTimer() {
+    if (this._sessionOpenTimer !== null) {
+      clearTimeout(this._sessionOpenTimer);
+      this._sessionOpenTimer = null;
+    }
+  }
+
+  private _clearSessionOpenWaiter() {
+    this._clearSessionOpenTimer();
+    this._sessionOpenWaiter = null;
+  }
+
+  private _resolveSessionOpen() {
+    if (!this._sessionOpenWaiter) {
+      return;
+    }
+    const waiter = this._sessionOpenWaiter;
+    this._clearSessionOpenWaiter();
+    waiter.resolve();
+  }
+
+  private _rejectSessionOpen(error: Error) {
+    if (!this._sessionOpenWaiter) {
+      return;
+    }
+    const waiter = this._sessionOpenWaiter;
+    this._clearSessionOpenWaiter();
+    waiter.reject(error);
   }
 
   private _handleStale() {
@@ -310,6 +374,20 @@ export class CortexClient {
   private _handleClose(code: number, reason: string) {
     if (this._disconnectRequested) return;
     if (this._channelState === 'AUTH_FAILED') return;
+
+    if (this._sessionOpenWaiter) {
+      this._rejectSessionOpen(
+        code === 4001
+          ? makeError('auth_invalid', 'Session open failed during authentication')
+          : makeError(
+            'transport_protocol_violation',
+            reason ? `Connection closed before session opened (${reason})` : 'Connection closed before session opened',
+          ),
+      );
+      this._channelState = code === 4001 ? 'AUTH_FAILED' : 'CLOSED';
+      this._stopBackgroundActivity();
+      return;
+    }
 
     // Auth rejection codes
     if (code === 4001) {
@@ -325,6 +403,40 @@ export class CortexClient {
           this._reconnectLoopPromise = null;
         });
     }
+  }
+
+  private _handleSessionMessage(msg: CortexMessage) {
+    if (msg.type === 'system::pong' && typeof msg.payload['heartbeat_id'] === 'string') {
+      this._liveness?.handlePong(msg.payload['heartbeat_id'] as string);
+      return;
+    }
+
+    if (msg.type === 'system::opened') {
+      const sessionContext = extractSessionContext(msg);
+      this._sessionContext = sessionContext;
+      this._sessionMeta = mergeLegacySessionMeta(this._bootstrapMeta, sessionContext);
+      this._resolveSessionOpen();
+    } else if (msg.type === 'system::error' && this._sessionOpenWaiter) {
+      const code = typeof msg.payload['code'] === 'string' ? msg.payload['code'] : 'session_not_ready';
+      const message = typeof msg.payload['message'] === 'string' ? msg.payload['message'] : 'Session open failed';
+      this._rejectSessionOpen(makeError(code, message));
+    }
+
+    this._dispatchMessage(msg);
+  }
+
+  private _handleSessionFatalError(err: Error) {
+    this._rejectSessionOpen(err);
+    this._channelState = 'AUTH_FAILED';
+    this._stopBackgroundActivity();
+    this._transport.close();
+    this._dispatchMessage({
+      type: 'system::error',
+      schema: '1.0',
+      session_id: this._session.sessionId ?? '',
+      payload: { code: (err as unknown as { code?: string }).code ?? 'transport_protocol_violation', message: err.message },
+      ts: new Date().toISOString(),
+    });
   }
 
   private async _reconnectLoop() {
@@ -380,19 +492,7 @@ export class CortexClient {
       }
 
       // Restart liveness
-      this._liveness?.stop();
-      this._liveness = createLiveness(
-        this._transport,
-        this._options.pingInterval,
-        this._options.pongTimeout,
-        this._options.staleThreshold,
-        {
-          onStale: () => this._handleStale(),
-          getSessionId: () => this._session.sessionId,
-          getChannelId: () => this._channelId,
-        },
-      );
-      this._liveness.start();
+      this._startLiveness();
       this._scheduleTokenRefresh();
       return;
     }
@@ -458,6 +558,26 @@ export class CortexClient {
     }
   }
 
+  private _cleanupFailedConnect() {
+    this._stopBackgroundActivity();
+    this._clearSessionOpenWaiter();
+    this._transport.close();
+    this._channelState = 'CLOSED';
+    this._accessToken = null;
+    this._refreshToken = null;
+    this._wsUrl = null;
+    this._runtimeHttpBaseUrl = null;
+    this._cpApiUrl = null;
+    this._session.reset();
+    this._sessionContext = null;
+    this._sessionMeta = null;
+    this._bootstrapMeta = null;
+  }
+
+  private _isSessionReady() {
+    return this._channelState === 'OPEN' && this._sessionContext !== null && this._session.sessionId !== null;
+  }
+
   private _shouldStopReconnect() {
     return this._disconnectRequested || this._channelState === 'AUTH_FAILED';
   }
@@ -497,7 +617,7 @@ export class CortexClient {
 
   private _requireSessionId(sessionId?: string): string {
     const effectiveSessionId = sessionId ?? this.sessionId;
-    if (!effectiveSessionId) {
+    if (!effectiveSessionId || !this._isSessionReady()) {
       throw makeError('session_not_ready', 'Session is not ready');
     }
     return effectiveSessionId;
@@ -577,6 +697,80 @@ function asRecord(value: unknown): Record<string, unknown> | null {
   return value as Record<string, unknown>;
 }
 
+function asNullableString(value: unknown): string | null {
+  if (typeof value !== 'string') {
+    return null;
+  }
+  const normalized = value.trim();
+  return normalized === '' ? null : normalized;
+}
+
+function extractSessionContext(message: CortexMessage): SessionContext {
+  const payload = asRecord(message.payload) ?? {};
+  const identity = asRecord(payload['identity']);
+  const correspondent = asRecord(payload['correspondent']);
+  return {
+    sessionId: message.session_id,
+    status: asNullableString(payload['status']) ?? 'initializing',
+    executionMode: asNullableString(payload['execution_mode']) ?? 'production',
+    artifactId: asNullableString(payload['artifact_id']),
+    artifactKind: asNullableString(payload['artifact_kind']),
+    runMode: asNullableString(payload['run_mode']),
+    identity: identity
+      ? {
+        tenantId: asNullableString(identity['tenant_id']),
+        projectId: asNullableString(identity['project_id']),
+        deploymentId: asNullableString(identity['deployment_id']),
+        releaseId: asNullableString(identity['release_id']),
+        userId: asNullableString(identity['user_id']),
+        userUuid: asNullableString(identity['user_uuid']),
+        actorKind: asNullableString(identity['actor_kind']),
+        actorRef: asNullableString(identity['actor_ref']),
+      }
+      : null,
+    correspondent: correspondent && asNullableString(correspondent['name'])
+      ? {
+        kind: asNullableString(correspondent['kind']),
+        id: asNullableString(correspondent['id']),
+        name: asNullableString(correspondent['name']) as string,
+        title: asNullableString(correspondent['title']),
+        subtitle: asNullableString(correspondent['subtitle']),
+        avatarUrl: asNullableString(correspondent['avatar_url']),
+      }
+      : null,
+  };
+}
+
+function mergeLegacySessionMeta(
+  bootstrapMeta: Record<string, unknown> | null,
+  sessionContext: SessionContext,
+): Record<string, unknown> {
+  const merged: Record<string, unknown> = { ...(bootstrapMeta ?? {}) };
+  if (sessionContext.correspondent) {
+    merged['chat_correspondent'] = {
+      kind: sessionContext.correspondent.kind ?? undefined,
+      id: sessionContext.correspondent.id ?? undefined,
+      name: sessionContext.correspondent.name,
+      title: sessionContext.correspondent.title ?? undefined,
+      subtitle: sessionContext.correspondent.subtitle ?? undefined,
+      avatar_url: sessionContext.correspondent.avatarUrl ?? undefined,
+    };
+  }
+  if (sessionContext.identity) {
+    merged['identity'] = {
+      tenant_id: sessionContext.identity.tenantId,
+      project_id: sessionContext.identity.projectId,
+      deployment_id: sessionContext.identity.deploymentId,
+      release_id: sessionContext.identity.releaseId,
+      user_id: sessionContext.identity.userId,
+      user_uuid: sessionContext.identity.userUuid,
+      actor_kind: sessionContext.identity.actorKind,
+      actor_ref: sessionContext.identity.actorRef,
+    };
+  }
+  return merged;
+}
+
 function withQueryParams(url: string, params: Record<string, string | number | boolean>): string {
   const parsed = new URL(url);
   for (const [key, value] of Object.entries(params)) {
@@ -591,4 +785,20 @@ function mapFileResponseError(status: number): Error {
   if (status === 404) return makeError('file_not_found', 'File not found');
   if (status === 410) return makeError('file_expired', 'File expired');
   return makeError('file_operation_failed', `File operation failed with status ${status}`);
+}
+
+interface Deferred<T> {
+  promise: Promise<T>;
+  resolve: (value: T | PromiseLike<T>) => void;
+  reject: (reason?: unknown) => void;
+}
+
+function createDeferred<T>(): Deferred<T> {
+  let resolve!: Deferred<T>['resolve'];
+  let reject!: Deferred<T>['reject'];
+  const promise = new Promise<T>((res, rej) => {
+    resolve = res;
+    reject = rej;
+  });
+  return { promise, resolve, reject };
 }

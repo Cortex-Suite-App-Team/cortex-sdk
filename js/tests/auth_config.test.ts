@@ -17,7 +17,45 @@ class FakeWebSocket implements WebSocketLike {
     setTimeout(() => this.onopen?.({}), 0);
   }
 
-  send(_data: string): void {}
+  send(data: string): void {
+    const parsed = JSON.parse(data) as { type?: string; meta?: Record<string, unknown> };
+    if (parsed.type === 'system::init') {
+      setTimeout(() => {
+        this.onmessage?.({
+          data: JSON.stringify({
+            type: 'system::opened',
+            schema: '1.0',
+            session_id: 'sess_test',
+            payload: {
+              status: 'initializing',
+              client_msg_id: typeof parsed.meta?.['client_msg_id'] === 'string' ? parsed.meta['client_msg_id'] : 'cli_init_test',
+              execution_mode: 'production',
+              identity: {
+                tenant_id: 'tenant_test',
+                project_id: 'project_test',
+                deployment_id: null,
+                release_id: 'release_test',
+                user_id: null,
+                user_uuid: null,
+                actor_kind: 'tenant_api_key_user',
+                actor_ref: 'tenant_project:tenant_test:project_test',
+              },
+              correspondent: {
+                kind: 'digital_worker',
+                id: 'project_test',
+                name: 'Test Worker',
+                title: 'Digital Worker',
+                subtitle: null,
+                avatar_url: null,
+              },
+            },
+            meta: parsed.meta ?? {},
+            ts: new Date().toISOString(),
+          }),
+        });
+      }, 0);
+    }
+  }
 
   close(code = 1000, reason = 'disconnect'): void {
     this.readyState = 3;

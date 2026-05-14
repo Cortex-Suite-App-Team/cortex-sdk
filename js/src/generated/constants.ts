@@ -7,6 +7,7 @@ export const WS_SUBPROTOCOL_JWT_PREFIX = "cortex-sdk.jwt.";
 export const SCHEMA_VERSION = "1.0";
 
 export const DEFAULT_CONNECT_TIMEOUT_MS = 10000;
+export const DEFAULT_SESSION_OPEN_TIMEOUT_MS = 10000;
 export const DEFAULT_SEND_TIMEOUT_MS = 10000;
 export const DEFAULT_RESYNC_TIMEOUT_MS = 15000;
 export const DEFAULT_PING_INTERVAL_MS = 15000;

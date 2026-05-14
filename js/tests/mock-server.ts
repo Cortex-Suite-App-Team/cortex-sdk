@@ -90,6 +90,35 @@ function makeEnvelope(
   };
 }
 
+function makeOpenedEnvelope(clientMsgId: string): Record<string, unknown> {
+  return makeEnvelope('system::opened', {
+    status: 'initializing',
+    client_msg_id: clientMsgId,
+    execution_mode: 'production',
+    artifact_id: 'rel_42',
+    artifact_kind: 'graph',
+    run_mode: 'normal',
+    identity: {
+      tenant_id: 'tenant_test',
+      project_id: 'project_test',
+      deployment_id: 'deploy_test',
+      release_id: 'rel_42',
+      user_id: null,
+      user_uuid: null,
+      actor_kind: 'public_widget_user',
+      actor_ref: 'public_widget:tenant_test:project_test:live-worker',
+    },
+    correspondent: {
+      kind: 'digital_worker',
+      id: 'project_test',
+      name: 'Mock Worker',
+      title: 'Digital Worker',
+      subtitle: null,
+      avatar_url: null,
+    },
+  });
+}
+
 function defaultHttpStatus(code: string): number {
   switch (code) {
     case 'auth_invalid':
@@ -140,6 +169,8 @@ export function startMockServer(options: MockServerOptions = {}): Promise<MockSe
     let currentAccessToken = initialAccessToken;
     let currentRefreshToken = refreshToken;
     let currentRefreshedAccessToken = refreshedAccessToken;
+    let httpPort = 0;
+    let hangPort = 0;
 
     function takeInjection(
       predicate: (injection: InjectedError) => boolean,
@@ -182,15 +213,14 @@ export function startMockServer(options: MockServerOptions = {}): Promise<MockSe
       const chunks: Buffer[] = [];
       req.on('data', (chunk: Buffer) => chunks.push(chunk));
       req.on('end', () => {
-        const requestUrl = new URL(req.url ?? '/', `http://127.0.0.1:${(httpServer.address() as { port: number }).port || 0}`);
+        const requestUrl = new URL(req.url ?? '/', `http://127.0.0.1:${httpPort}`);
         const url = requestUrl.pathname;
 
         if (req.method === 'POST' && url === '/auth/token') {
           const injection = takeInjection((candidate) => candidate.options.phase === 'auth_token');
-          const wsPort = (httpServer.address() as { port: number }).port;
           const wsUrl = injection?.code === 'transport_connect_timeout'
-            ? `ws://127.0.0.1:${(hangServer.address() as net.AddressInfo).port}/ws`
-            : `ws://127.0.0.1:${wsPort}/ws`;
+            ? `ws://127.0.0.1:${hangPort}/ws`
+            : `ws://127.0.0.1:${httpPort}/ws`;
 
           if (injection && injection.code !== 'transport_connect_timeout') {
             const status = injection.options.status ?? defaultHttpStatus(injection.code);
@@ -205,13 +235,33 @@ export function startMockServer(options: MockServerOptions = {}): Promise<MockSe
           res.writeHead(200, { 'Content-Type': 'application/json' });
           res.end(JSON.stringify({
             ws_url: wsUrl,
-            cp_api_url: `http://127.0.0.1:${wsPort}`,
+            cp_api_url: `http://127.0.0.1:${httpPort}`,
             access_token: currentAccessToken,
             refresh_token: currentRefreshToken,
             runtime_bootstrap: {
               execution_mode: 'production',
               bundle_url: '/api/runtime/releases/42/bundle/',
               checksum: 'sha256:release_42',
+              session_context: {
+                identity: {
+                  tenant_id: 'tenant_test',
+                  project_id: 'project_test',
+                  deployment_id: 'deploy_test',
+                  release_id: 'rel_42',
+                  user_id: null,
+                  user_uuid: null,
+                  actor_kind: 'public_widget_user',
+                  actor_ref: 'public_widget:tenant_test:project_test:live-worker',
+                },
+                correspondent: {
+                  kind: 'digital_worker',
+                  id: 'project_test',
+                  name: 'Mock Worker',
+                  title: 'Digital Worker',
+                  subtitle: null,
+                  avatar_url: null,
+                },
+              },
             },
           }));
           return;
@@ -388,12 +438,9 @@ export function startMockServer(options: MockServerOptions = {}): Promise<MockSe
         }
 
         if (messageType === 'system::init' && autoInitEcho) {
-          server.sendTo(ws, makeEnvelope('chat::answer', {
-            content: '',
-            role: 'assistant',
-            answer_kind: 'echo',
-            turn_id: 'turn_init',
-          }));
+          const meta = parsed.meta as Record<string, unknown> | undefined;
+          const clientMsgId = typeof meta?.['client_msg_id'] === 'string' ? meta['client_msg_id'] : 'cli_init_test';
+          server.sendTo(ws, makeOpenedEnvelope(clientMsgId));
         }
 
         if (messageType === 'system::ping' && autoPong) {
@@ -514,7 +561,9 @@ export function startMockServer(options: MockServerOptions = {}): Promise<MockSe
     };
 
     hangServer.listen(0, '127.0.0.1', () => {
+      hangPort = (hangServer.address() as net.AddressInfo).port;
       httpServer.listen(0, '127.0.0.1', () => {
+        httpPort = (httpServer.address() as net.AddressInfo).port;
         resolve(server);
       });
     });

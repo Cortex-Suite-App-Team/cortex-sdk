@@ -33,6 +33,10 @@
       "enum": ["normal", "debug"],
       "description": "Sandbox-only execution metadata"
     },
+    "session_context": {
+      "type": "object",
+      "description": "Trusted session identity/correspondent snapshot resolved by Control Plane before openSession."
+    },
     "trigger_payload": {
       "type": "object",
       "description": "Optional Sandbox-local first trigger payload"

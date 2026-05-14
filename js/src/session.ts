@@ -52,6 +52,7 @@ export interface SessionController {
   get lastSeq(): number;
   setTenantId(tenantId: string | null | undefined): void;
   setTransport(transport: Transport, sendTimeoutMs: number): void;
+  reset(): void;
 }
 
 export function createSession(
@@ -63,6 +64,7 @@ export function createSession(
   let _transport: Transport | null = null;
   let _sendTimeoutMs = 10000;
   let _tenantId: string | null = null;
+  let _opened = false;
 
   function setSessionState(next: SessionState): void {
     if (TERMINAL_STATES.has(_sessionState) && _sessionState !== next) {
@@ -99,6 +101,14 @@ export function createSession(
   function send(envelope: Record<string, unknown>): Promise<void> {
     if (!_transport) return Promise.reject(new Error('No transport'));
     return _transport.send(envelope, _sendTimeoutMs);
+  }
+
+  function reset(): void {
+    _sessionId = null;
+    _sessionState = 'CREATED';
+    _lastSeq = 0;
+    _tenantId = null;
+    _opened = false;
   }
 
   function buildEnvelope(type: string, payload: Record<string, unknown>): Record<string, unknown> {
@@ -215,11 +225,15 @@ export function createSession(
       _sendTimeoutMs = sendTimeoutMs;
     },
 
+    reset,
+
     get sessionId() { return _sessionId; },
     get sessionState() { return _sessionState; },
     get lastSeq() { return _lastSeq; },
 
     sendInit(bootstrap: RuntimeBootstrap): Promise<void> {
+      _sessionId = null;
+      _opened = false;
       _sessionState = 'INITIALIZING';
       // system::init has no session_id — intentionally omit it
       const envelope: Record<string, unknown> = {
@@ -284,11 +298,27 @@ export function createSession(
         return; // malformed frame — ignore
       }
 
-      // Learn session_id from first server message
-      if (!_sessionId && msg.session_id) {
-        _sessionId = msg.session_id;
-        if (!TERMINAL_STATES.has(_sessionState)) {
-          _sessionState = 'ACTIVE';
+      if (!_opened) {
+        if (msg.type === 'system::opened') {
+          if (!msg.session_id) {
+            callbacks.onFatalError(
+              makeError('transport_protocol_violation', 'system::opened requires session_id'),
+            );
+            return;
+          }
+          _sessionId = msg.session_id;
+          _opened = true;
+          if (!TERMINAL_STATES.has(_sessionState)) {
+            _sessionState = 'ACTIVE';
+          }
+        } else if (msg.type !== 'system::error') {
+          callbacks.onFatalError(
+            makeError(
+              'transport_protocol_violation',
+              `Received ${msg.type} before system::opened`,
+            ),
+          );
+          return;
         }
       }
 

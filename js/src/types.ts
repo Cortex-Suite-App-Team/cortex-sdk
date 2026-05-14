@@ -10,6 +10,7 @@ export interface CortexClientOptions {
   authUrl?: string;
   onMessage: (message: CortexMessage) => void;
   connectTimeout?: number;
+  sessionOpenTimeout?: number;
   sendTimeout?: number;
   resyncTimeout?: number;
   pingInterval?: number;
@@ -108,7 +109,39 @@ export interface RuntimeBootstrap {
   artifact_id?: string;
   artifact_kind?: string;
   run_mode?: string;
+  session_context?: Record<string, unknown>;
   trigger_payload?: Record<string, unknown>;
+}
+
+export interface SessionIdentityContext {
+  tenantId: string | null;
+  projectId: string | null;
+  deploymentId: string | null;
+  releaseId: string | null;
+  userId: string | null;
+  userUuid: string | null;
+  actorKind: string | null;
+  actorRef: string | null;
+}
+
+export interface SessionCorrespondentContext {
+  kind?: string | null;
+  id?: string | null;
+  name: string;
+  title?: string | null;
+  subtitle?: string | null;
+  avatarUrl?: string | null;
+}
+
+export interface SessionContext {
+  sessionId: string;
+  status: string;
+  executionMode: string;
+  artifactId: string | null;
+  artifactKind: string | null;
+  runMode: string | null;
+  identity: SessionIdentityContext | null;
+  correspondent: SessionCorrespondentContext | null;
 }
 
 export interface SendMessageOptions {

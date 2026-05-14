@@ -1,6 +1,6 @@
 /**
  * normal_chat transcript test:
- * system::init → chat::message → chat::answer
+ * system::init → system::opened → chat::message → chat::answer
  */
 import { startMockServer, FIXED_SESSION_ID } from './mock-server.js';
 import { CortexClient } from '../src/client.js';
@@ -43,9 +43,6 @@ describe('normal_chat', () => {
 
     try {
       await client.connect();
-
-      // After connect the first echo from server gives us session_id
-      await waitFor(() => client.sessionId !== null);
       expect(client.sessionId).toBe(FIXED_SESSION_ID);
       expect(client.channelState).toBe('OPEN');
 
@@ -76,6 +73,7 @@ describe('normal_chat', () => {
         .find((frame) => frame['type'] === 'chat::message');
       expect(rawChatFrame).toBeDefined();
       expect(rawChatFrame?.['type']).toBe('chat::message');
+      expect(rawChatFrame?.['session_id']).toBe(FIXED_SESSION_ID);
     } finally {
       await client.disconnect();
       await server.close();
