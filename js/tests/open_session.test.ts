@@ -130,9 +130,32 @@ describe('openSession handshake', () => {
       await expect(client.connect()).rejects.toMatchObject({
         code: 'session_open_timeout',
       });
+      await waitFor(() => client.channelState === 'CLOSED');
       expect(client.sessionId).toBeNull();
+      expect(client.channelState).toBe('CLOSED');
+      expect(server.wsConnectionCount).toBe(1);
     } finally {
       await client.disconnect();
+      await server.close();
+    }
+  });
+
+  it('disconnect clears session getters after an opened session', async () => {
+    const server = await startMockServer();
+    const client = makeClient(server, () => {});
+
+    try {
+      await client.connect();
+      expect(client.sessionId).toBe(FIXED_SESSION_ID);
+      expect(client.sessionContext?.sessionId).toBe(FIXED_SESSION_ID);
+
+      await client.disconnect();
+
+      expect(client.channelState).toBe('CLOSED');
+      expect(client.sessionId).toBeNull();
+      expect(client.sessionContext).toBeNull();
+      expect(client.sessionMeta).toBeNull();
+    } finally {
       await server.close();
     }
   });

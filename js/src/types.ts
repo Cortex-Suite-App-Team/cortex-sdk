@@ -21,7 +21,7 @@ export interface CortexClientOptions {
 export interface CortexMessage {
   type: string;
   schema: string;
-  session_id: string;
+  session_id?: string;
   seq?: number;
   payload: Record<string, unknown>;
   meta?: Record<string, unknown>;

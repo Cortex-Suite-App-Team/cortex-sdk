@@ -86,6 +86,7 @@ export class CortexClient {
   private _connectPromise: Promise<void> | null = null;
   private _sessionOpenWaiter: Deferred<void> | null = null;
   private _sessionOpenTimer: ReturnType<typeof setTimeout> | null = null;
+  private _suppressNextReconnect = false;
 
   private readonly _transport;
   private readonly _session;
@@ -155,20 +156,19 @@ export class CortexClient {
   async disconnect(): Promise<void> {
     this._disconnectRequested = true;
     this._stopBackgroundActivity();
-    this._clearSessionOpenWaiter();
-    this._channelState = 'CLOSED';
+    this._resetConnectionRuntimeState();
     this._transport.close();
   }
 
   async sendMessage(options: { content: unknown; attachments?: unknown[]; meta?: Record<string, unknown> }): Promise<void> {
     console.debug('[sdk] CortexClient.sendMessage start', summarizeSendPayload(options));
-    this._requireSessionId();
+    this._requireActiveSessionId();
     await this._session.sendChatMessage(options.content, options.attachments, options.meta);
     console.debug('[sdk] CortexClient.sendMessage done');
   }
 
   async replyEscalation(options: ReplyEscalationOptions): Promise<void> {
-    this._requireSessionId();
+    this._requireActiveSessionId();
     await this._session.sendEscalationReply(
       options.escalationId,
       options.waitToken,
@@ -256,6 +256,7 @@ export class CortexClient {
   }
 
   async stop(): Promise<void> {
+    this._requireActiveSessionId();
     await this._session.sendStop();
   }
 
@@ -263,11 +264,7 @@ export class CortexClient {
     this._disconnectRequested = false;
     this._reconnectAttempt = 0;
     this._stopBackgroundActivity();
-    this._clearSessionOpenWaiter();
-    this._session.reset();
-    this._sessionContext = null;
-    this._sessionMeta = null;
-    this._bootstrapMeta = null;
+    this._resetSessionRuntimeState();
     this._channelState = 'CLOSED';
 
     const authResponse = await exchangeApiKey(
@@ -298,6 +295,7 @@ export class CortexClient {
 
   private async _openChannel(): Promise<void> {
     if (!this._wsUrl || !this._accessToken) throw new Error('Auth not completed');
+    this._suppressNextReconnect = false;
     this._channelState = 'CONNECTING';
     await this._transport.open(this._wsUrl, this._accessToken);
     this._channelState = 'OPEN';
@@ -328,7 +326,7 @@ export class CortexClient {
       this._rejectSessionOpen(
         makeError('session_open_timeout', 'Session did not open after system::init'),
       );
-      this._transport.close(1000, 'session_open_timeout');
+      this._closeTransportWithoutReconnect(1000, 'session_open_timeout');
     }, this._options.sessionOpenTimeout);
     return waiter.promise;
   }
@@ -374,6 +372,11 @@ export class CortexClient {
   private _handleClose(code: number, reason: string) {
     if (this._disconnectRequested) return;
     if (this._channelState === 'AUTH_FAILED') return;
+    if (this._suppressNextReconnect) {
+      this._suppressNextReconnect = false;
+      this._channelState = 'CLOSED';
+      return;
+    }
 
     if (this._sessionOpenWaiter) {
       this._rejectSessionOpen(
@@ -560,18 +563,8 @@ export class CortexClient {
 
   private _cleanupFailedConnect() {
     this._stopBackgroundActivity();
-    this._clearSessionOpenWaiter();
-    this._transport.close();
-    this._channelState = 'CLOSED';
-    this._accessToken = null;
-    this._refreshToken = null;
-    this._wsUrl = null;
-    this._runtimeHttpBaseUrl = null;
-    this._cpApiUrl = null;
-    this._session.reset();
-    this._sessionContext = null;
-    this._sessionMeta = null;
-    this._bootstrapMeta = null;
+    this._resetConnectionRuntimeState();
+    this._closeTransportWithoutReconnect();
   }
 
   private _isSessionReady() {
@@ -615,9 +608,40 @@ export class CortexClient {
     }
   }
 
+  private _resetSessionRuntimeState() {
+    this._clearSessionOpenWaiter();
+    this._session.reset();
+    this._sessionContext = null;
+    this._sessionMeta = null;
+    this._bootstrapMeta = null;
+  }
+
+  private _resetConnectionRuntimeState() {
+    this._resetSessionRuntimeState();
+    this._channelState = 'CLOSED';
+    this._accessToken = null;
+    this._refreshToken = null;
+    this._wsUrl = null;
+    this._runtimeHttpBaseUrl = null;
+    this._cpApiUrl = null;
+  }
+
+  private _closeTransportWithoutReconnect(code?: number, reason?: string) {
+    this._suppressNextReconnect = true;
+    this._transport.close(code, reason);
+  }
+
+  private _requireActiveSessionId(): string {
+    const effectiveSessionId = this.sessionId;
+    if (!effectiveSessionId || !this._isSessionReady()) {
+      throw makeError('session_not_ready', 'Session is not ready');
+    }
+    return effectiveSessionId;
+  }
+
   private _requireSessionId(sessionId?: string): string {
     const effectiveSessionId = sessionId ?? this.sessionId;
-    if (!effectiveSessionId || !this._isSessionReady()) {
+    if (!effectiveSessionId) {
       throw makeError('session_not_ready', 'Session is not ready');
     }
     return effectiveSessionId;
@@ -709,8 +733,12 @@ function extractSessionContext(message: CortexMessage): SessionContext {
   const payload = asRecord(message.payload) ?? {};
   const identity = asRecord(payload['identity']);
   const correspondent = asRecord(payload['correspondent']);
+  const sessionId = message.session_id;
+  if (!sessionId) {
+    throw makeError('transport_protocol_violation', 'system::opened missing session_id');
+  }
   return {
-    sessionId: message.session_id,
+    sessionId,
     status: asNullableString(payload['status']) ?? 'initializing',
     executionMode: asNullableString(payload['execution_mode']) ?? 'production',
     artifactId: asNullableString(payload['artifact_id']),
