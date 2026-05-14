@@ -2,7 +2,7 @@
   "$schema": "http://json-schema.org/draft-07/schema#",
   "$id": "https://cortex.local/sdk/schema/chat.answer.json",
   "title": "chat::answer Payload",
-  "description": "Final answer from the runtime. Terminates a turn. answer_kind=echo is the init acknowledgement; answer_kind=final is a regular answer.",
+  "description": "Final assistant answer from the runtime. Terminates a turn. The answer_kind field remains for compatibility; active outbound mapping uses answer_kind=final.",
   "type": "object",
   "additionalProperties": false,
   "required": ["content", "role", "answer_kind", "turn_id"],
@@ -17,8 +17,8 @@
     },
     "answer_kind": {
       "type": "string",
-      "enum": ["final", "echo"],
-      "description": "final = regular answer; echo = init acknowledgement"
+      "enum": ["final"],
+      "description": "final = regular final assistant answer"
     },
     "turn_id": {
       "type": "string",

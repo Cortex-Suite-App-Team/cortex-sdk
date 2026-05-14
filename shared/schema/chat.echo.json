@@ -1,0 +1,32 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://cortex.local/sdk/schema/chat.echo.json",
+  "title": "chat::echo Payload",
+  "description": "Runtime echo/ack of user input. Used to reconcile an optimistic user message and does not terminate the assistant turn.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["role"],
+  "properties": {
+    "content": {
+      "description": "User-visible echoed content",
+      "type": ["string", "array", "object", "number", "boolean", "null"]
+    },
+    "message": {
+      "description": "Optional structured echoed payload when content is not provided"
+    },
+    "role": {
+      "type": "string",
+      "const": "user"
+    },
+    "turn_id": {
+      "type": "string"
+    },
+    "meta": {
+      "type": "object"
+    }
+  },
+  "anyOf": [
+    { "required": ["content"] },
+    { "required": ["message"] }
+  ]
+}
