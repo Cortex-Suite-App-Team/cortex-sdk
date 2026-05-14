@@ -16,6 +16,8 @@ export interface CortexClientOptions {
   pingInterval?: number;
   pongTimeout?: number;
   staleThreshold?: number;
+  /** Internal/debug use only. Disabled by default. */
+  debug?: boolean;
 }
 
 export interface CortexMessage {

@@ -17,6 +17,7 @@ import {
   isTokenExpiringSoon,
   normalizeAuthBaseUrl,
 } from './auth.js';
+import { debugLog, readSdkDebugFlag } from './debug.js';
 import { createTransport } from './transport.js';
 import { createLiveness } from './liveness.js';
 import { createSession } from './session.js';
@@ -83,6 +84,7 @@ export class CortexClient {
   private _channelId = `ch_${Math.random().toString(36).slice(2, 10)}`;
   private _reconnectAttempt = 0;
   private _disconnectRequested = false;
+  private _debugEnabled = false;
   private _connectPromise: Promise<void> | null = null;
   private _sessionOpenWaiter: Deferred<void> | null = null;
   private _sessionOpenTimer: ReturnType<typeof setTimeout> | null = null;
@@ -105,12 +107,14 @@ export class CortexClient {
       pingInterval: DEFAULT_PING_INTERVAL_MS,
       pongTimeout: DEFAULT_PONG_TIMEOUT_MS,
       staleThreshold: DEFAULT_STALE_THRESHOLD_MS,
+      debug: false,
       ...options,
       authUrl,
     };
     this._platform = platform;
 
-    this._transport = createTransport(platform.WS, this._options.connectTimeout);
+    this._debugEnabled = options.debug === true || readSdkDebugFlag();
+    this._transport = createTransport(platform.WS, this._options.connectTimeout, () => this._debugEnabled);
     this._session = createSession({
       onMessage: (msg) => this._handleSessionMessage(msg),
       onFatalError: (err) => this._handleSessionFatalError(err),
@@ -161,10 +165,14 @@ export class CortexClient {
   }
 
   async sendMessage(options: { content: unknown; attachments?: unknown[]; meta?: Record<string, unknown> }): Promise<void> {
-    console.debug('[sdk] CortexClient.sendMessage start', summarizeSendPayload(options));
+    debugLog(this._debugEnabled, '[sdk] CortexClient.sendMessage start', summarizeSendPayload(options));
     this._requireActiveSessionId();
     await this._session.sendChatMessage(options.content, options.attachments, options.meta);
-    console.debug('[sdk] CortexClient.sendMessage done');
+    debugLog(this._debugEnabled, '[sdk] CortexClient.sendMessage done');
+  }
+
+  setDebugLoggingEnabled(enabled: boolean): void {
+    this._debugEnabled = enabled || readSdkDebugFlag();
   }
 
   async replyEscalation(options: ReplyEscalationOptions): Promise<void> {

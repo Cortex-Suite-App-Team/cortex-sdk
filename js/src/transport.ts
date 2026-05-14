@@ -2,6 +2,7 @@ import {
   WS_SUBPROTOCOL,
   WS_SUBPROTOCOL_JWT_PREFIX,
 } from './constants.js';
+import { debugLog } from './debug.js';
 import { makeError } from './errors.js';
 import type { WebSocketCtor, WebSocketLike } from './types.js';
 
@@ -67,6 +68,7 @@ function _buildOpenError(
 export function createTransport(
   WS: WebSocketCtor,
   connectTimeoutMs: number,
+  isDebugEnabled: () => boolean = () => false,
 ): Transport {
   let ws: WebSocketLike | null = null;
 
@@ -160,12 +162,12 @@ export function createTransport(
           )
             ? (message as { type: string }).type
             : 'unknown';
-          console.debug('[sdk] transport.send start', {
+          debugLog(isDebugEnabled(), '[sdk] transport.send start', {
             envelopeType,
             readyState: ws.readyState,
           });
           ws.send(JSON.stringify(message));
-          console.debug('[sdk] transport.send done', {
+          debugLog(isDebugEnabled(), '[sdk] transport.send done', {
             envelopeType,
             readyState: ws.readyState,
           });
