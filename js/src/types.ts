@@ -49,13 +49,25 @@ export type ChannelState =
   | 'CLOSED'
   | 'AUTH_FAILED';
 
-export interface AuthTokenResponse {
+export interface NormalAuthTokenResponse {
+  auth_required?: false;
   ws_url: string;
   access_token: string;
   refresh_token: string;
   cp_api_url?: string | null;
   runtime_bootstrap: RuntimeBootstrap;
 }
+
+export interface AuthRequiredTokenResponse {
+  auth_required: true;
+  ws_url: string;
+  access_token: string;
+  refresh_token: string;
+  cp_api_url?: string | null;
+  auth?: { type: 'system::auth'; payload: Record<string, unknown> };
+}
+
+export type AuthTokenResponse = NormalAuthTokenResponse | AuthRequiredTokenResponse;
 
 export type FileScope = 'session' | 'project';
 

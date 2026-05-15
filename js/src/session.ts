@@ -37,6 +37,7 @@ export interface SessionController {
   sendResync(): Promise<void>;
   sendStop(): Promise<void>;
   sendChatMessage(content: unknown, attachments: unknown[] | undefined, meta?: Record<string, unknown>): Promise<void>;
+  sendSystemLogin(login: string, password: string): Promise<void>;
   sendEscalationReply(
     escalationId: string,
     waitToken: string,
@@ -259,6 +260,17 @@ export function createSession(
       return send(buildEnvelope('chat::message', buildMessagePayload(content, attachments, meta)));
     },
 
+    sendSystemLogin(login: string, password: string): Promise<void> {
+      const envelope: Record<string, unknown> = {
+        type: 'system::login',
+        schema: SCHEMA_VERSION,
+        payload: { login, password },
+        ts: new Date().toISOString(),
+      };
+      if (_tenantId) envelope['tenant_id'] = _tenantId;
+      return send(envelope);
+    },
+
     sendEscalationReply(
       escalationId: string,
       waitToken: string,
@@ -311,7 +323,7 @@ export function createSession(
           if (!TERMINAL_STATES.has(_sessionState)) {
             _sessionState = 'ACTIVE';
           }
-        } else if (msg.type !== 'system::error') {
+        } else if (msg.type !== 'system::error' && msg.type !== 'system::auth') {
           callbacks.onFatalError(
             makeError(
               'transport_protocol_violation',

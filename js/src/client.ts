@@ -38,6 +38,7 @@ import type {
   PromoteFileOptions,
   SessionContext,
   UploadFileOptions,
+  NormalAuthTokenResponse,
 } from './types.js';
 
 export interface CortexClientPlatform {
@@ -81,6 +82,7 @@ export class CortexClient {
   private _sessionMeta: Record<string, unknown> | null = null;
   private _sessionContext: SessionContext | null = null;
   private _bootstrapMeta: Record<string, unknown> | null = null;
+  private _authRequired = false;
   private _channelId = `ch_${Math.random().toString(36).slice(2, 10)}`;
   private _reconnectAttempt = 0;
   private _disconnectRequested = false;
@@ -169,6 +171,10 @@ export class CortexClient {
     this._requireActiveSessionId();
     await this._session.sendChatMessage(options.content, options.attachments, options.meta);
     debugLog(this._debugEnabled, '[sdk] CortexClient.sendMessage done');
+  }
+
+  async sendLogin(credentials: { login: string; password: string }): Promise<void> {
+    await this._session.sendSystemLogin(credentials.login, credentials.password);
   }
 
   setDebugLoggingEnabled(enabled: boolean): void {
@@ -287,14 +293,29 @@ export class CortexClient {
     this._runtimeHttpBaseUrl = deriveRuntimeHttpBaseUrl(authResponse.ws_url);
     this._runtimeHttpBaseUrl = deriveRuntimeHttpBaseUrlFromHttpUrl(this._platform.uploadUrl) ?? this._runtimeHttpBaseUrl;
     this._cpApiUrl = normalizeOptionalBaseUrl(authResponse.cp_api_url);
-    this._bootstrapMeta = asRecord(asRecord(authResponse.runtime_bootstrap?.trigger_payload)?.meta);
+
+    if (authResponse.auth_required === true) {
+      // Auth-required: open WS, do NOT send system::init, resolve connect() immediately.
+      // SessionManager sends system::auth via on_open; consumer calls sendLogin();
+      // SM sends system::opened after successful login.
+      this._authRequired = true;
+      await this._openChannel();
+      this._session.setTransport(this._transport, this._options.sendTimeout);
+      this._startLiveness();
+      this._scheduleTokenRefresh();
+      return;
+    }
+
+    // Public path (unchanged)
+    const normalResponse = authResponse as NormalAuthTokenResponse;
+    this._bootstrapMeta = asRecord(asRecord(normalResponse.runtime_bootstrap?.trigger_payload)?.meta);
     this._sessionMeta = this._bootstrapMeta;
 
     await this._openChannel();
 
     this._session.setTransport(this._transport, this._options.sendTimeout);
     const openWaiter = this._createSessionOpenWaiter();
-    await this._session.sendInit(authResponse.runtime_bootstrap);
+    await this._session.sendInit(normalResponse.runtime_bootstrap);
     await openWaiter;
 
     this._startLiveness();
@@ -383,6 +404,15 @@ export class CortexClient {
     if (this._suppressNextReconnect) {
       this._suppressNextReconnect = false;
       this._channelState = 'CLOSED';
+      return;
+    }
+
+    // If we're in auth-required state and no session was opened yet, close cleanly.
+    // Reconnecting here would send system::resync without a session_id, which is invalid.
+    if (this._authRequired && !this._session.sessionId) {
+      this._authRequired = false;
+      this._channelState = 'CLOSED';
+      this._stopBackgroundActivity();
       return;
     }
 
@@ -622,6 +652,7 @@ export class CortexClient {
     this._sessionContext = null;
     this._sessionMeta = null;
     this._bootstrapMeta = null;
+    this._authRequired = false;
   }
 
   private _resetConnectionRuntimeState() {

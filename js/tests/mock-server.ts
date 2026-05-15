@@ -38,6 +38,8 @@ export interface MockServerOptions {
   initialAccessToken?: string;
   refreshedAccessToken?: string;
   refreshToken?: string;
+  /** When true, /auth/token returns auth_required:true (no runtime_bootstrap). */
+  authRequired?: boolean;
 }
 
 export interface MockServer {
@@ -151,6 +153,7 @@ export function startMockServer(options: MockServerOptions = {}): Promise<MockSe
     initialAccessToken = FIXED_ACCESS_TOKEN,
     refreshedAccessToken = 'access_token_v2',
     refreshToken = FIXED_REFRESH_TOKEN,
+    authRequired = false,
   } = options;
 
   resetSeq();
@@ -228,6 +231,22 @@ export function startMockServer(options: MockServerOptions = {}): Promise<MockSe
             res.end(JSON.stringify({
               error: injection.code,
               message: `Injected ${injection.code}`,
+            }));
+            return;
+          }
+
+          if (authRequired) {
+            res.writeHead(200, { 'Content-Type': 'application/json' });
+            res.end(JSON.stringify({
+              auth_required: true,
+              ws_url: wsUrl,
+              cp_api_url: `http://127.0.0.1:${httpPort}`,
+              access_token: currentAccessToken,
+              refresh_token: currentRefreshToken,
+              auth: {
+                type: 'system::auth',
+                payload: { state: 'required', method: 'login_password', message: 'Sign in required.' },
+              },
             }));
             return;
           }
