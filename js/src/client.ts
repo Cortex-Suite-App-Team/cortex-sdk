@@ -132,6 +132,8 @@ export class CortexClient {
   get sessionId(): string | null { return this._session.sessionId; }
   get sessionMeta(): Record<string, unknown> | null { return this._sessionMeta; }
   get sessionContext(): SessionContext | null { return this._sessionContext; }
+  get accessToken(): string | null { return this._accessToken; }
+  get cpApiUrl(): string | null { return this._cpApiUrl; }
 
   onMessage(handler: (message: CortexMessage) => void): () => void {
     this._messageHandlers.add(handler);
@@ -450,6 +452,19 @@ export class CortexClient {
     if (msg.type === 'system::pong' && typeof msg.payload['heartbeat_id'] === 'string') {
       this._liveness?.handlePong(msg.payload['heartbeat_id'] as string);
       return;
+    }
+
+    // After system::login succeeds, SM delivers new post-auth tokens in the accepted payload.
+    // Update stored tokens so client.accessToken returns the non-pre-auth token by the
+    // time system::opened fires and the widget creates the history client.
+    if (msg.type === 'system::auth' && msg.payload['state'] === 'accepted') {
+      const p = msg.payload as Record<string, unknown>;
+      if (typeof p['access_token'] === 'string' && p['access_token']) {
+        this._accessToken = p['access_token'];
+      }
+      if (typeof p['refresh_token'] === 'string' && p['refresh_token']) {
+        this._refreshToken = p['refresh_token'];
+      }
     }
 
     if (msg.type === 'system::opened') {
