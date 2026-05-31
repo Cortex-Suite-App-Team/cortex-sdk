@@ -47,9 +47,11 @@ export async function uploadFile(
   }
 
   const body = await res.json() as Record<string, unknown>;
-  const fileId = body['file_id'] ?? body['attachment_id'];
+  // Canonical session-file id is file_ref (sf_...). Fall back to file_id/attachment_id for
+  // older SessionManager builds that have not adopted the descriptor model yet.
+  const fileId = body['file_ref'] ?? body['file_id'] ?? body['attachment_id'];
   if (typeof fileId !== 'string') {
-    throw makeError('upload_failed', 'Upload response did not include file_id');
+    throw makeError('upload_failed', 'Upload response did not include a file reference');
   }
   return fileId;
 }

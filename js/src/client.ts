@@ -238,6 +238,30 @@ export class CortexClient {
     throw makeError('file_operation_failed', 'File API response does not expose bytes');
   }
 
+  /**
+   * Mint a short-lived, single-use download URL for a session file descriptor (sf_ file_ref).
+   *
+   * Returns an absolute, unauthenticated GET URL that a plain anchor navigation can download
+   * (no CORS, no auth header). Mint-on-click: call this each time the user clicks the link so the
+   * token is never stale.
+   */
+  async mintSessionFileDownloadUrl(
+    fileRef: string,
+    options: { sessionId?: string } = {},
+  ): Promise<string> {
+    if (!this._accessToken) throw makeError('auth_invalid', 'Not connected');
+    const sessionId = this._requireSessionId(options.sessionId);
+    const base = this._requireRuntimeHttpBaseUrl();
+    const mintUrl = `${base}/sessions/${encodeURIComponent(sessionId)}`
+      + `/files/${encodeURIComponent(fileRef)}/download-token`;
+    const body = await this._requestJson(mintUrl, 'POST');
+    const downloadUrl = body['download_url'];
+    if (typeof downloadUrl !== 'string' || !downloadUrl) {
+      throw makeError('file_operation_failed', 'Download token response missing download_url');
+    }
+    return downloadUrl.startsWith('http') ? downloadUrl : `${base}${downloadUrl}`;
+  }
+
   async listFiles(options: ListFilesOptions = {}): Promise<FileListResult> {
     if (!this._accessToken) throw makeError('auth_invalid', 'Not connected');
     const scope = options.scope ?? 'session';
