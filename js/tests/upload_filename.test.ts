@@ -93,20 +93,20 @@ describe('upload filename preservation', () => {
       }
     }
 
-    Object.defineProperty(globalThis, 'FormData', {
-      configurable: true,
-      value: NodeFormData,
-    });
+      Object.defineProperty(globalThis, 'FormData', {
+        configurable: true,
+        value: NodeFormData,
+      });
 
     try {
       const file = Object.assign(new Blob(['hello']), { name: 'node-report.txt' });
       const fileId = await uploadFileNode(file, 'token', '/upload', async () => ({
         ok: true,
         status: 200,
-        json: async () => ({ file_id: 'fi_test' }),
+        json: async () => ({ file_ref: 'sf_test' }),
       }));
 
-      expect(fileId).toBe('fi_test');
+      expect(fileId).toBe('sf_test');
       expect(requireCaptured(captured).entries[0]?.filename).toBe('node-report.txt');
     } finally {
       Object.defineProperty(globalThis, 'FormData', {

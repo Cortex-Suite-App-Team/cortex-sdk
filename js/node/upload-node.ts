@@ -60,7 +60,7 @@ export async function uploadFileNode(
   }
 
   const body = await res.json() as Record<string, unknown>;
-  const fileId = body['file_id'] ?? body['attachment_id'];
+  const fileId = body['file_ref'] ?? body['file_id'] ?? body['attachment_id'];
   if (typeof fileId !== 'string') {
     throw makeError('upload_failed', 'Upload response did not include file_id');
   }
