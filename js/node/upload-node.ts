@@ -1,8 +1,20 @@
 import { createReadStream } from 'fs';
+import { basename } from 'path';
 import { Readable } from 'stream';
 import { makeError } from '../src/errors.js';
 import type { UploadInput } from '../src/upload.js';
 import type { FetchFn } from '../src/types.js';
+
+function resolveUploadFilename(file: UploadInput | Readable): string {
+  if (typeof file === 'string') {
+    const name = basename(file.trim());
+    return name || 'upload';
+  }
+  const name = typeof file === 'object' && file !== null
+    ? (file as { name?: unknown }).name
+    : undefined;
+  return typeof name === 'string' && name.trim() ? name : 'upload';
+}
 
 export async function uploadFileNode(
   file: UploadInput | Readable,
@@ -32,8 +44,8 @@ export async function uploadFileNode(
   // Use Node's FormData (available in Node 18+)
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const formData = new (globalThis as any).FormData();
-  const blob = new Blob([buffer]);
-  formData.append('file', blob, 'upload');
+  const blob = new Blob([Uint8Array.from(buffer)]);
+  formData.append('file', blob, resolveUploadFilename(file));
 
   const res = await fetchFn(uploadUrl, {
     method: 'POST',

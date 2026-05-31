@@ -3,6 +3,13 @@ import type { FetchFn, FormDataCtor } from './types.js';
 
 export type UploadInput = Blob | ArrayBuffer | string | Uint8Array;
 
+function resolveUploadFilename(file: unknown): string {
+  const name = typeof file === 'object' && file !== null
+    ? (file as { name?: unknown }).name
+    : undefined;
+  return typeof name === 'string' && name.trim() ? name : 'upload';
+}
+
 export async function uploadFile(
   file: UploadInput,
   accessToken: string,
@@ -25,7 +32,7 @@ export async function uploadFile(
     blob = file as Blob;
   }
 
-  formData.append('file', blob, 'upload');
+  formData.append('file', blob, resolveUploadFilename(file));
 
   const res = await fetchFn(uploadUrl, {
     method: 'POST',
