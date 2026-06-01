@@ -11,6 +11,7 @@ import {
   TOKEN_REFRESH_BUFFER_MS,
 } from './constants.js';
 import { makeError } from './errors.js';
+import { ensureFrontendUuid } from './frontend-uuid.js';
 import {
   exchangeApiKey,
   refreshAccessToken,
@@ -312,6 +313,7 @@ export class CortexClient {
       this._platform.fetchFn,
       this._options.authUrl,
       this._options.workerRef,
+      ensureFrontendUuid(),
     );
     this._accessToken = authResponse.access_token;
     this._refreshToken = authResponse.refresh_token;

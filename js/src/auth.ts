@@ -35,14 +35,21 @@ export async function exchangeApiKey(
   fetchFn: FetchFn,
   authBaseUrl = DEFAULT_AUTH_URL,
   workerRef?: string,
+  frontendUuid?: string,
 ): Promise<AuthTokenResponse> {
+  // frontend_uuid is established here, once, at token exchange. The CP binds it
+  // to the refresh/session identity; it must not be re-asserted on refresh.
+  const bodyPayload: Record<string, string> = {};
+  if (workerRef) bodyPayload['worker_ref'] = workerRef;
+  if (frontendUuid) bodyPayload['frontend_uuid'] = frontendUuid;
   const requestInit = {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
       Authorization: `ApiKey ${apiKey}`,
+      ...(frontendUuid ? { 'X-Cortex-Frontend-UUID': frontendUuid } : {}),
     },
-    ...(workerRef ? { body: JSON.stringify({ worker_ref: workerRef }) } : {}),
+    ...(Object.keys(bodyPayload).length ? { body: JSON.stringify(bodyPayload) } : {}),
   };
   const res = await fetchFn(buildAuthEndpoint(authBaseUrl, AUTH_TOKEN_PATH), {
     ...requestInit,
