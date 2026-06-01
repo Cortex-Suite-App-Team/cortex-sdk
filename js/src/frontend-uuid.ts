@@ -8,11 +8,39 @@
 const STORAGE_KEY = 'cortex_frontend_uuid';
 const COOKIE_MAX_AGE_SECONDS = 60 * 60 * 24 * 365; // 1 year
 
+// Local minimal interfaces so this module does not depend on DOM lib types —
+// the node build target has no DOM, and a node package should not typologically
+// smell of the browser.
+type BrowserCryptoLike = {
+  randomUUID?: () => string;
+};
+
+type BrowserDocumentLike = {
+  cookie: string;
+};
+
+type BrowserStorageLike = {
+  getItem: (key: string) => string | null;
+  setItem: (key: string, value: string) => void;
+};
+
+type BrowserGlobalLike = typeof globalThis & {
+  crypto?: BrowserCryptoLike;
+  document?: BrowserDocumentLike;
+  localStorage?: BrowserStorageLike;
+};
+
+function getBrowserGlobal(): BrowserGlobalLike {
+  return globalThis as BrowserGlobalLike;
+}
+
 function generateUuid(): string {
-  const cryptoObj = (globalThis as { crypto?: Crypto }).crypto;
+  const cryptoObj = getBrowserGlobal().crypto;
+
   if (cryptoObj && typeof cryptoObj.randomUUID === 'function') {
     return cryptoObj.randomUUID();
   }
+
   // RFC4122-ish fallback when crypto.randomUUID is unavailable.
   return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, (c) => {
     const r = (Math.random() * 16) | 0;
@@ -22,21 +50,32 @@ function generateUuid(): string {
 }
 
 function readCookie(name: string): string | null {
-  const doc = (globalThis as { document?: Document }).document;
-  if (!doc || typeof doc.cookie !== 'string') return null;
+  const doc = getBrowserGlobal().document;
+
+  if (!doc || typeof doc.cookie !== 'string') {
+    return null;
+  }
+
   const prefix = `${name}=`;
+
   for (const part of doc.cookie.split(';')) {
     const trimmed = part.trim();
+
     if (trimmed.startsWith(prefix)) {
       return decodeURIComponent(trimmed.slice(prefix.length));
     }
   }
+
   return null;
 }
 
 function writeCookie(name: string, value: string): void {
-  const doc = (globalThis as { document?: Document }).document;
-  if (!doc) return;
+  const doc = getBrowserGlobal().document;
+
+  if (!doc) {
+    return;
+  }
+
   try {
     doc.cookie = `${name}=${encodeURIComponent(value)}; path=/; max-age=${COOKIE_MAX_AGE_SECONDS}; SameSite=Lax`;
   } catch {
@@ -49,13 +88,17 @@ function writeCookie(name: string, value: string): void {
  * on first use. Returns undefined when no storage is available (e.g. SSR/node).
  */
 export function ensureFrontendUuid(): string | undefined {
-  const ls = (globalThis as { localStorage?: Storage }).localStorage;
+  const browserGlobal = getBrowserGlobal();
+  const ls = browserGlobal.localStorage;
 
   // 1. localStorage (primary)
   if (ls) {
     try {
       const existing = ls.getItem(STORAGE_KEY);
-      if (existing) return existing;
+
+      if (existing) {
+        return existing;
+      }
     } catch {
       /* access may throw in some privacy modes — fall through to cookie */
     }
@@ -63,23 +106,36 @@ export function ensureFrontendUuid(): string | undefined {
 
   // 2. cookie (fallback)
   const fromCookie = readCookie(STORAGE_KEY);
+
   if (fromCookie) {
     if (ls) {
-      try { ls.setItem(STORAGE_KEY, fromCookie); } catch { /* ignore */ }
+      try {
+        ls.setItem(STORAGE_KEY, fromCookie);
+      } catch {
+        /* ignore */
+      }
     }
+
     return fromCookie;
   }
 
   // 3. no identity available at all (non-browser runtime)
-  if (!ls && !(globalThis as { document?: Document }).document) {
+  if (!ls && !browserGlobal.document) {
     return undefined;
   }
 
   // 4. generate + persist (localStorage primary, cookie mirror)
   const generated = generateUuid();
+
   if (ls) {
-    try { ls.setItem(STORAGE_KEY, generated); } catch { /* ignore */ }
+    try {
+      ls.setItem(STORAGE_KEY, generated);
+    } catch {
+      /* ignore */
+    }
   }
+
   writeCookie(STORAGE_KEY, generated);
+
   return generated;
 }
